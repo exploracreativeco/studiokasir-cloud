@@ -322,11 +322,15 @@ export default function AdminPage() {
   // -- OTS PAKET --
   async function saveOtsPaket() {
     if (!otsPaketForm.nama) { toast({ title: 'Nama wajib diisi', variant: 'destructive' }); return }
-    const body = { ...otsPaketForm, backgrounds: otsPaketForm.backgrounds.filter(b => b.trim()) }
-    if (editOtsPaketId) {
-      await fetch(`/api/ots/paket/${editOtsPaketId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    } else {
-      await fetch('/api/ots/paket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    if (!otsPaketForm.jenis) { toast({ title: 'Pilih jenis dulu', variant: 'destructive' }); return }
+    const body = { ...otsPaketForm, harga: Number(otsPaketForm.harga) || 0, backgrounds: otsPaketForm.backgrounds.filter(b => b.trim()) }
+    const res = editOtsPaketId
+      ? await fetch(`/api/ots/paket/${editOtsPaketId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      : await fetch('/api/ots/paket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      toast({ title: 'Gagal menyimpan paket', description: typeof err.error === 'string' ? err.error : JSON.stringify(err.error?.fieldErrors || err.error || ''), variant: 'destructive' })
+      return
     }
     toast({ title: 'Paket OTS tersimpan!' }); setShowOtsPaketForm(false); setEditOtsPaketId(null); setOtsPaketForm({ nama: '', jenis: otsJenis[0]?.nama || '', harga: 0, satuan: 'sesi', backgrounds: [''] }); load()
   }
