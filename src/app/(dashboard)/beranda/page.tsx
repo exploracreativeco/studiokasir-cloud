@@ -79,7 +79,6 @@ export default function BerandaPage() {
                   : list.map((s: any) => (
                     <p key={s.id} className="text-[9px] font-semibold text-gray-600 mt-0.5 leading-tight">
                       {s.jamMulai}-{s.jamSelesai}
-                      {s.branch?.slug && <span className="block text-[8px] text-gray-400 uppercase">{s.branch.slug}</span>}
                     </p>
                   ))}
               </div>

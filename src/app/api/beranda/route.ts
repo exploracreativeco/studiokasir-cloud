@@ -25,7 +25,7 @@ export async function GET() {
     prisma.role.findFirst({ where: { slug: (session.user as any).role }, select: { label: true } }).catch(() => null),
     prisma.shift.findMany({
       where: { userId, tanggal: { gte: weekStart, lt: weekEnd } },
-      select: { id: true, tanggal: true, jamMulai: true, jamSelesai: true, tipe: true, branch: { select: { nama: true, slug: true } } },
+      select: { id: true, tanggal: true, jamMulai: true, jamSelesai: true },
       orderBy: [{ tanggal: 'asc' }, { jamMulai: 'asc' }],
     }),
     prisma.eventCrew.findMany({
