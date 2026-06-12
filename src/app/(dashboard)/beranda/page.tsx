@@ -99,7 +99,17 @@ export default function BerandaPage() {
 
         {/* STATISTIK ABSEN BULAN INI */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5">
-          <p className="font-bold text-sm flex items-center gap-2 mb-3"><ClipboardCheck className="w-4 h-4 text-blue-600" /> Absen Bulan Ini</p>
+          <p className="font-bold text-sm flex items-center gap-2 mb-3"><ClipboardCheck className="w-4 h-4 text-blue-600" /> Bulan Ini</p>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="bg-blue-50 rounded-xl p-3 text-center">
+              <p className="text-xl font-bold text-blue-700">{data.jamBulanIni?.jam ?? 0}</p>
+              <p className="text-[10px] text-blue-500 font-semibold">JAM KERJA (JADWAL)</p>
+            </div>
+            <div className="bg-blue-50 rounded-xl p-3 text-center">
+              <p className="text-xl font-bold text-blue-700">{data.jamBulanIni?.hari ?? 0}</p>
+              <p className="text-[10px] text-blue-500 font-semibold">HARI MASUK</p>
+            </div>
+          </div>
           {(absenStats || []).length === 0
             ? <p className="text-xs text-gray-400">Belum ada absen bulan ini.</p>
             : <div className="grid grid-cols-2 gap-2">

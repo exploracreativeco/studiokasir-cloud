@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, History, Trash2, X, Loader2 } from 'lucide-react'
 import { Branch, UserOpt, Shift, BULAN, dateKey, chipStyle, inisial } from './_components/shared'
+import GeneratorModal from './_components/GeneratorModal'
 import { WeekHourView } from './_components/WeekHourView'
 import { MonthView } from './_components/MonthView'
 
@@ -28,6 +29,7 @@ export default function JadwalPage() {
   const [modal, setModal] = useState<{ tanggal: string; shift?: Shift } | null>(null)
   const [form, setForm] = useState({ ...emptyForm })
   const [showHistory, setShowHistory] = useState(false)
+  const [showGen, setShowGen] = useState(false)
   const [history, setHistory] = useState<any[]>([])
 
   useEffect(() => {
@@ -144,6 +146,9 @@ export default function JadwalPage() {
           <button onClick={() => setView('jam')} className={`px-3 py-2 text-xs font-bold ${view === 'jam' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>Per Jam</button>
           <button onClick={() => setView('bulan')} className={`px-3 py-2 text-xs font-bold ${view === 'bulan' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>Bulanan</button>
         </div>
+        <div className="flex rounded-lg overflow-hidden">
+          <button onClick={() => setShowGen(true)} className="px-3 py-2 text-xs font-bold bg-purple-600 text-white rounded-lg hover:bg-purple-700">🪄 Generate</button>
+        </div>
         <select value={branchId} onChange={e => setBranchId(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white">
           {branches.map(b => <option key={b.id} value={b.id}>{b.nama}</option>)}
         </select>
@@ -252,6 +257,17 @@ export default function JadwalPage() {
             ))}
           </div>
         </div>
+      )}
+      {showGen && (
+        <GeneratorModal
+          branchId={branchId}
+          branchNama={branches.find(b => b.id === branchId)?.nama || ''}
+          users={users}
+          bulan={bulan}
+          tahun={tahun}
+          onClose={() => setShowGen(false)}
+          onApplied={() => load()}
+        />
       )}
     </div>
   )

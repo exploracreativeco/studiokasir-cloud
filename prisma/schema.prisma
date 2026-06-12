@@ -876,3 +876,11 @@ model Pelamar {
 
   @@index([lowonganId, status])
 }
+model JadwalTemplate {
+  id        String   @id @default(cuid())
+  branchId  String   @unique
+  tipe      String
+  config    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
