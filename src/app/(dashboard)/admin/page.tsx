@@ -53,6 +53,18 @@ function SortableAddonRow({ addon, onEdit, onDelete }: { addon: any; onEdit: (a:
  )
 }
 
+
+function StudioSelect({ value, onChange, branches }: { value: string; onChange: (v: string) => void; branches: any[] }) {
+  return (
+    <div><label className="block text-xs font-medium text-gray-500 mb-1">Studio</label>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white">
+        <option value="">Semua Studio</option>
+        {branches.map((b: any) => <option key={b.id} value={b.id}>{b.nama}</option>)}
+      </select></div>
+  )
+}
+
 export default function AdminPage() {
   const { toast } = useToast()
   const { data: session } = useSession()
@@ -88,7 +100,7 @@ export default function AdminPage() {
   // Package form
   const [showPackageForm, setShowPackageForm] = useState(false)
   const [editPackageId, setEditPackageId] = useState<string | null>(null)
-  const [packageForm, setPackageForm] = useState({ name: '', category: '', tier: '', price: 0, pricePerPerson: false, isActive: true, description: '' })
+  const [packageForm, setPackageForm] = useState({ name: '', category: '', tier: '', price: 0, pricePerPerson: false, isActive: true, description: '', branchId: '' })
   const [editingPackageId, setEditingPackageId] = useState<string | null>(null)
   const [inlineEditPkgId, setInlineEditPkgId] = useState<string | null>(null)
   const [tempPackageOps, setTempPackageOps] = useState<any[]>([])
@@ -96,22 +108,22 @@ export default function AdminPage() {
   // Addon form
   const [showAddonForm, setShowAddonForm] = useState(false)
   const [editAddonId, setEditAddonId] = useState<string | null>(null)
-  const [addonForm, setAddonForm] = useState({ name: '', price: 0, isActive: true })
+  const [addonForm, setAddonForm] = useState({ name: '', price: 0, isActive: true, branchId: '' })
 
   // Promo form
   const [showPromoForm, setShowPromoForm] = useState(false)
   const [editPromoId, setEditPromoId] = useState<string | null>(null)
-  const [promoForm, setPromoForm] = useState({ name: '', code: '', discountType: 'PERCENTAGE', discountValue: 0, isActive: true })
+  const [promoForm, setPromoForm] = useState({ name: '', code: '', discountType: 'PERCENTAGE', discountValue: 0, isActive: true, branchId: '' })
 
   // Fotografer form
   const [showFotograferForm, setShowFotograferForm] = useState(false)
   const [editFotograferId, setEditFotograferId] = useState<string | null>(null)
-  const [fotograferForm, setFotograferForm] = useState({ name: '', phone: '' })
+  const [fotograferForm, setFotograferForm] = useState({ name: '', phone: '', branchId: '' })
 
   // Metode form
   const [showMetodeForm, setShowMetodeForm] = useState(false)
   const [editMetodeId, setEditMetodeId] = useState<string | null>(null)
-  const [metodeForm, setMetodeForm] = useState({ nama: '', namaBank: '', nomorRekening: '', atasNama: '' })
+  const [metodeForm, setMetodeForm] = useState({ nama: '', namaBank: '', nomorRekening: '', atasNama: '', branchId: '' })
 
   // OTS Status form
   const [showStatusForm, setShowStatusForm] = useState(false)
@@ -179,7 +191,7 @@ export default function AdminPage() {
     if (!packageForm.name || !packageForm.price) { toast({ title: 'Nama dan harga wajib diisi', variant: 'destructive' }); return }
     const url = editPackageId ? `/api/packages/${editPackageId}` : '/api/packages'
     const method = editPackageId ? 'PUT' : 'POST'
-    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(packageForm) })
+    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...packageForm, branchId: packageForm.branchId || null }) })
     toast({ title: editPackageId ? 'Paket diupdate!' : 'Paket ditambahkan!' })
     setShowPackageForm(false); setEditPackageId(null); setInlineEditPkgId(null); setPackageForm({ name: '', category: pkgCategories[0]?.name || '', tier: '', price: 0, pricePerPerson: false, isActive: true, description: '' }); load()
   }
@@ -237,7 +249,7 @@ export default function AdminPage() {
     if (!addonForm.name) { toast({ title: 'Nama wajib diisi', variant: 'destructive' }); return }
     const url = editAddonId ? `/api/addons/${editAddonId}` : '/api/addons'
     const method = editAddonId ? 'PUT' : 'POST'
-    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(addonForm) })
+    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...addonForm, branchId: addonForm.branchId || null }) })
     toast({ title: editAddonId ? 'Add-on diupdate!' : 'Add-on ditambahkan!' })
     setShowAddonForm(false); setEditAddonId(null); setAddonForm({ name: '', price: 0, isActive: true }); load()
   }
@@ -262,7 +274,7 @@ export default function AdminPage() {
     if (!promoForm.name || !promoForm.code) { toast({ title: 'Nama dan kode wajib diisi', variant: 'destructive' }); return }
     const url = editPromoId ? `/api/promos/${editPromoId}` : '/api/promos'
     const method = editPromoId ? 'PUT' : 'POST'
-    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(promoForm) })
+    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...promoForm, branchId: promoForm.branchId || null }) })
     toast({ title: editPromoId ? 'Promo diupdate!' : 'Promo ditambahkan!' })
     setShowPromoForm(false); setEditPromoId(null); setPromoForm({ name: '', code: '', discountType: 'PERCENTAGE', discountValue: 0, isActive: true }); load()
   }
@@ -272,7 +284,7 @@ export default function AdminPage() {
     if (!fotograferForm.name) { toast({ title: 'Nama wajib diisi', variant: 'destructive' }); return }
     const url = editFotograferId ? `/api/fotografer/${editFotograferId}` : '/api/fotografer'
     const method = editFotograferId ? 'PUT' : 'POST'
-    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fotograferForm) })
+    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...fotograferForm, branchId: fotograferForm.branchId || null }) })
     toast({ title: editFotograferId ? 'Fotografer diupdate!' : 'Fotografer ditambahkan!' })
     setShowFotograferForm(false); setEditFotograferId(null); setFotograferForm({ name: '', phone: '' }); load()
   }
@@ -281,9 +293,9 @@ export default function AdminPage() {
   async function saveMetode() {
     if (!metodeForm.nama) { toast({ title: 'Nama wajib diisi', variant: 'destructive' }); return }
     if (editMetodeId) {
-      await fetch('/api/metode-pembayaran', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editMetodeId, ...metodeForm }) })
+      await fetch('/api/metode-pembayaran', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editMetodeId, ...metodeForm, branchId: metodeForm.branchId || null }) })
     } else {
-      await fetch('/api/metode-pembayaran', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(metodeForm) })
+      await fetch('/api/metode-pembayaran', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...metodeForm, branchId: metodeForm.branchId || null }) })
     }
     toast({ title: editMetodeId ? 'Metode diupdate!' : 'Metode ditambahkan!' })
     setShowMetodeForm(false); setEditMetodeId(null); setMetodeForm({ nama: '', namaBank: '', nomorRekening: '', atasNama: '' }); load()
@@ -418,6 +430,7 @@ export default function AdminPage() {
                     placeholder="Contoh: 30 menit sesi foto, 10 file edited, backdrop pilihan..."
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white resize-none" />
+                  <StudioSelect value={packageForm.branchId} onChange={v => setPackageForm(f => ({ ...f, branchId: v }))} branches={branchList} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => { setShowPackageForm(false); setEditPackageId(null) }} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
@@ -447,7 +460,7 @@ export default function AdminPage() {
                           } else {
                             setInlineEditPkgId(p.id)
                             setEditPackageId(p.id)
-                            setPackageForm({ name: p.name, category: p.category, tier: p.tier || '', price: p.price, pricePerPerson: p.pricePerPerson, isActive: p.isActive, description: p.description || '' })
+                            setPackageForm({ name: p.name, category: p.category, tier: p.tier || '', price: p.price, pricePerPerson: p.pricePerPerson, isActive: p.isActive, description: p.description || '' , branchId: p.branchId || '' })
                             setShowPackageForm(false)
                           }
                         }}
@@ -642,6 +655,7 @@ export default function AdminPage() {
                   <div><label className="block text-xs font-medium text-gray-500 mb-1">Harga (Rp)</label>
                     <input type="number" value={addonForm.price || 0} onChange={e => setAddonForm(f => ({ ...f, price: Number(e.target.value) }))}
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
+                  <StudioSelect value={addonForm.branchId} onChange={v => setAddonForm(f => ({ ...f, branchId: v }))} branches={branchList} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowAddonForm(false)} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
@@ -660,7 +674,7 @@ export default function AdminPage() {
                     <tbody className="divide-y divide-gray-50">
                       {addons.map((a: any) => (
                         <SortableAddonRow key={a.id} addon={a}
-                          onEdit={(a) => { setEditAddonId(a.id); setAddonForm({ name: a.name, price: a.price, isActive: a.isActive }); setShowAddonForm(true) }}
+                          onEdit={(a) => { setEditAddonId(a.id); setAddonForm({ name: a.name, price: a.price, isActive: a.isActive , branchId: a.branchId || '' }); setShowAddonForm(true) }}
                           onDelete={(id) => deleteItem('addons', id)} />
                       ))}
                     </tbody>
@@ -696,6 +710,7 @@ export default function AdminPage() {
                   <div><label className="block text-xs font-medium text-gray-500 mb-1">Nilai</label>
                     <input type="number" value={promoForm.discountValue || 0} onChange={e => setPromoForm(f => ({ ...f, discountValue: Number(e.target.value) }))}
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
+                  <StudioSelect value={promoForm.branchId} onChange={v => setPromoForm(f => ({ ...f, branchId: v }))} branches={branchList} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowPromoForm(false)} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
@@ -717,7 +732,7 @@ export default function AdminPage() {
                       <td className="px-4 py-3 text-sm">{p.discountType === 'PERCENTAGE' ? `${p.discountValue}%` : formatRupiah(p.discountValue)}</td>
                       <td className="px-4 py-3"><Badge variant={p.isActive ? 'green' : 'default'}>{p.isActive ? 'Aktif' : 'Nonaktif'}</Badge></td>
                       <td className="px-4 py-3"><div className="flex gap-1">
-                        <button onClick={() => { setEditPromoId(p.id); setPromoForm({ name: p.name, code: p.code, discountType: p.discountType, discountValue: p.discountValue, isActive: p.isActive }); setShowPromoForm(true) }}
+                        <button onClick={() => { setEditPromoId(p.id); setPromoForm({ name: p.name, code: p.code, discountType: p.discountType, discountValue: p.discountValue, isActive: p.isActive , branchId: p.branchId || '' }); setShowPromoForm(true) }}
                           className="p-1.5 border border-gray-200 rounded-lg text-gray-400 hover:text-blue-600"><Pencil className="w-3.5 h-3.5" /></button>
                         <ToggleBtn item={p} endpoint={`/api/promos/${p.id}`} />
                       </div></td>
@@ -745,6 +760,7 @@ export default function AdminPage() {
                   <div><label className="block text-xs font-medium text-gray-500 mb-1">No. HP</label>
                     <input value={fotograferForm.phone} onChange={e => setFotograferForm(f => ({ ...f, phone: e.target.value }))} placeholder="08xxxxxxxxxx"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
+                  <StudioSelect value={fotograferForm.branchId} onChange={v => setFotograferForm(f => ({ ...f, branchId: v }))} branches={branchList} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowFotograferForm(false)} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
@@ -764,7 +780,7 @@ export default function AdminPage() {
                       <td className="px-4 py-3 text-sm text-gray-500">{f.phone || '-'}</td>
                       <td className="px-4 py-3"><Badge variant={f.isActive ? 'green' : 'default'}>{f.isActive ? 'Aktif' : 'Nonaktif'}</Badge></td>
                       <td className="px-4 py-3"><div className="flex gap-1">
-                        <button onClick={() => { setEditFotograferId(f.id); setFotograferForm({ name: f.name, phone: f.phone || '' }); setShowFotograferForm(true) }}
+                        <button onClick={() => { setEditFotograferId(f.id); setFotograferForm({ name: f.name, phone: f.phone || '' , branchId: f.branchId || '' }); setShowFotograferForm(true) }}
                           className="p-1.5 border border-gray-200 rounded-lg text-gray-400 hover:text-blue-600"><Pencil className="w-3.5 h-3.5" /></button>
                         <ToggleBtn item={f} endpoint={`/api/fotografer/${f.id}`} />
                       </div></td>
@@ -798,6 +814,7 @@ export default function AdminPage() {
                   <div><label className="block text-xs font-medium text-gray-500 mb-1">Atas Nama</label>
                     <input value={metodeForm.atasNama} onChange={e => setMetodeForm(f => ({ ...f, atasNama: e.target.value }))} placeholder="Nama pemilik"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
+                  <StudioSelect value={metodeForm.branchId} onChange={v => setMetodeForm(f => ({ ...f, branchId: v }))} branches={branchList} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowMetodeForm(false)} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
@@ -819,7 +836,7 @@ export default function AdminPage() {
                       <td className="px-4 py-3 text-xs text-gray-500">{m.atasNama || '-'}</td>
                       <td className="px-4 py-3"><Badge variant={m.isActive ? 'green' : 'default'}>{m.isActive ? 'Aktif' : 'Nonaktif'}</Badge></td>
                       <td className="px-4 py-3"><div className="flex gap-1">
-                        <button onClick={() => { setEditMetodeId(m.id); setMetodeForm({ nama: m.nama, namaBank: m.namaBank || '', nomorRekening: m.nomorRekening || '', atasNama: m.atasNama || '' }); setShowMetodeForm(true) }}
+                        <button onClick={() => { setEditMetodeId(m.id); setMetodeForm({ nama: m.nama, namaBank: m.namaBank || '', nomorRekening: m.nomorRekening || '', atasNama: m.atasNama || '' , branchId: m.branchId || '' }); setShowMetodeForm(true) }}
                           className="p-1.5 border border-gray-200 rounded-lg text-gray-400 hover:text-blue-600"><Pencil className="w-3.5 h-3.5" /></button>
                         <ToggleBtn item={m} endpoint="/api/metode-pembayaran" />
                       </div></td>

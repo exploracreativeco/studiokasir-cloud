@@ -9,6 +9,7 @@ const schema = z.object({
   price: z.coerce.number().min(0).max(100000000),
   description: z.string().optional(),
   isActive: z.boolean().default(true),
+  branchId: z.string().nullable().optional(),
 })
 
 export async function GET(req: NextRequest) {

@@ -3,7 +3,9 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
-const schema = z.object({ name: z.string().min(1), phone: z.string().optional(), isActive: z.boolean().default(true) })
+const schema = z.object({ name: z.string().min(1), phone: z.string().optional(), isActive: z.boolean().default(true),
+  branchId: z.string().nullable().optional(),
+})
 
 export async function GET(req: NextRequest) {
   const session = await auth()

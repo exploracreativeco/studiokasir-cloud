@@ -8,6 +8,7 @@ const schema = z.object({
   price: z.number().min(0),
   isActive: z.boolean().default(true),
   urutan: z.number().optional(),
+  branchId: z.string().nullable().optional(),
 })
 
 export async function GET(req: NextRequest) {

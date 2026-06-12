@@ -9,6 +9,7 @@ const schema = z.object({
   discountType: z.enum(['PERCENTAGE', 'FIXED']),
   discountValue: z.number().min(0),
   isActive: z.boolean().default(true),
+  branchId: z.string().nullable().optional(),
 })
 
 export async function GET(req: NextRequest) {
