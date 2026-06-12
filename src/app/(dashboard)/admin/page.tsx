@@ -24,7 +24,7 @@ const TABS = [
 ]
 
 
-function SortableAddonRow({ addon, onEdit, onDelete }: { addon: any; onEdit: (a: any) => void; onDelete: (id: string) => void }) {
+function SortableAddonRow({ addon, onEdit, onDelete, studioLabel }: { addon: any; onEdit: (a: any) => void; onDelete: (id: string) => void; studioLabel?: string }) {
  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: addon.id })
  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
  return (
@@ -34,7 +34,7 @@ function SortableAddonRow({ addon, onEdit, onDelete }: { addon: any; onEdit: (a:
          <GripVertical className="w-4 h-4" />
        </div>
      </td>
-     <td className="px-4 py-3 text-sm font-medium">{addon.name}</td>
+     <td className="px-4 py-3 text-sm font-medium">{addon.name} <span className="text-[9px] text-gray-400">· {studioLabel || 'Semua'}</span></td>
      <td className="px-4 py-3 text-sm">{formatRupiah(addon.price)}</td>
      <td className="px-4 py-3">
        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${addon.isActive ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
@@ -178,6 +178,8 @@ export default function AdminPage() {
   useEffect(() => { load() }, [])
   useEffect(() => { fetch('/api/branches').then(r => r.json()).then(b => Array.isArray(b) && setBranchList(b)).catch(() => {}) }, [])
   const [ctxBranch, setCtxBranch] = useState<string | null>(null)
+  const studioNama = (bid: string | null) => bid ? (branchList.find((b: any) => b.id === bid)?.nama || '?') : 'Semua'
+
   useEffect(() => { fetch('/api/context').then(r => r.json()).then(c => setCtxBranch(c?.branchSlug || null)).catch(() => {}) }, [])
 
   async function toggleActive(endpoint: string, item: any, activeField = 'isActive') {
@@ -450,7 +452,7 @@ export default function AdminPage() {
                   {packages.map((p: any) => (
                     <React.Fragment key={p.id}>
                       <tr className={`hover:bg-gray-50/50 ${!p.isActive ? 'opacity-50' : ''}`}>
-                      <td className="px-4 py-3 text-sm font-medium">{p.name}</td>
+                      <td className="px-4 py-3 text-sm font-medium">{p.name} <span className="text-[9px] text-gray-400">· {studioNama(p.branchId)}</span></td>
                       <td className="px-4 py-3"><Badge variant="purple">{p.category}</Badge></td>
                       <td className="px-4 py-3 text-xs text-gray-500">{p.tier || '-'}</td>
                       <td className="px-4 py-3 text-sm font-semibold">{formatRupiah(p.price)}</td>
@@ -676,7 +678,7 @@ export default function AdminPage() {
                     </tr></thead>
                     <tbody className="divide-y divide-gray-50">
                       {addons.map((a: any) => (
-                        <SortableAddonRow key={a.id} addon={a}
+                        <SortableAddonRow key={a.id} addon={a} studioLabel={studioNama(a.branchId)}
                           onEdit={(a) => { setEditAddonId(a.id); setAddonForm({ name: a.name, price: a.price, isActive: a.isActive , branchId: a.branchId || '' }); setShowAddonForm(true) }}
                           onDelete={(id) => deleteItem('addons', id)} />
                       ))}
@@ -729,7 +731,7 @@ export default function AdminPage() {
                 <tbody className="divide-y divide-gray-50">
                   {promos.map((p: any) => (
                     <tr key={p.id} className={`hover:bg-gray-50/50 ${!p.isActive ? 'opacity-50' : ''}`}>
-                      <td className="px-4 py-3 text-sm font-medium">{p.name}</td>
+                      <td className="px-4 py-3 text-sm font-medium">{p.name} <span className="text-[9px] text-gray-400">· {studioNama(p.branchId)}</span></td>
                       <td className="px-4 py-3 text-sm font-mono font-bold text-blue-600">{p.code}</td>
                       <td className="px-4 py-3 text-xs text-gray-500">{p.discountType === 'PERCENTAGE' ? 'Persen' : 'Nominal'}</td>
                       <td className="px-4 py-3 text-sm">{p.discountType === 'PERCENTAGE' ? `${p.discountValue}%` : formatRupiah(p.discountValue)}</td>
@@ -779,7 +781,7 @@ export default function AdminPage() {
                 <tbody className="divide-y divide-gray-50">
                   {fotografers.map((f: any) => (
                     <tr key={f.id} className={`hover:bg-gray-50/50 ${!f.isActive ? 'opacity-50' : ''}`}>
-                      <td className="px-4 py-3 text-sm font-medium">{f.name}</td>
+                      <td className="px-4 py-3 text-sm font-medium">{f.name} <span className="text-[9px] text-gray-400">· {studioNama(f.branchId)}</span></td>
                       <td className="px-4 py-3 text-sm text-gray-500">{f.phone || '-'}</td>
                       <td className="px-4 py-3"><Badge variant={f.isActive ? 'green' : 'default'}>{f.isActive ? 'Aktif' : 'Nonaktif'}</Badge></td>
                       <td className="px-4 py-3"><div className="flex gap-1">
@@ -833,7 +835,7 @@ export default function AdminPage() {
                 <tbody className="divide-y divide-gray-50">
                   {metodes.map((m: any) => (
                     <tr key={m.id} className={`hover:bg-gray-50/50 ${!m.isActive ? 'opacity-50' : ''}`}>
-                      <td className="px-4 py-3 text-sm font-medium">{m.nama}</td>
+                      <td className="px-4 py-3 text-sm font-medium">{m.nama} <span className="text-[9px] text-gray-400">· {studioNama(m.branchId)}</span></td>
                       <td className="px-4 py-3 text-xs text-gray-500">{m.namaBank || '-'}</td>
                       <td className="px-4 py-3 text-xs font-mono">{m.nomorRekening || '-'}</td>
                       <td className="px-4 py-3 text-xs text-gray-500">{m.atasNama || '-'}</td>

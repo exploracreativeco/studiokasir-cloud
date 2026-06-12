@@ -72,8 +72,9 @@ export default function SettingsPage() {
     { id: 'studio', label: 'Studio' },
     { id: 'email', label: 'Email' },
     { id: 'backup', label: 'Backup' },
-    { id: 'pending', label: '⏰ Pending' },
     ...(isSuperAdmin ? [
+      { id: 'users', label: '👥 Users' },
+      { id: 'access', label: 'Hak Akses' },
       { id: 'developer', label: 'Developer' },
     ] : []),
   ]
@@ -493,6 +494,94 @@ export default function SettingsPage() {
         )}
 
         {/* USERS */}
+        {activeTab === 'users' && isSuperAdmin && (
+          <div className="space-y-3">
+            <div className="flex justify-end">
+              <button onClick={() => { setShowUserForm(true); setEditUserId(null); setUserForm({ name: '', email: '', password: '', role: 'CASHIER' }) }}
+                className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-blue-700"><Plus className="w-3.5 h-3.5" /> Tambah User</button>
+            </div>
+            {showUserForm && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3 max-w-lg">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="block text-xs font-medium text-gray-500 mb-1">Nama*</label>
+                    <input value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))} placeholder="Nama lengkap"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
+                  <div><label className="block text-xs font-medium text-gray-500 mb-1">Email*</label>
+                    <input value={userForm.email} onChange={e => setUserForm(f => ({ ...f, email: e.target.value }))} placeholder="email@gmail.com"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
+                  <div><label className="block text-xs font-medium text-gray-500 mb-1">Password{editUserId ? ' (kosongkan jika tidak diubah)' : '*'}</label>
+                    <input type="password" value={userForm.password} onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))} placeholder="Password"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
+                  <div><label className="block text-xs font-medium text-gray-500 mb-1">Role</label>
+                    <select value={userForm.role} onChange={e => setUserForm(f => ({ ...f, role: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white">
+                      <option value="CASHIER">Kasir</option>
+                      <option value="ADMIN">Admin</option>
+                      <option value="SUPERADMIN">Super Admin</option>
+                    </select></div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => { setShowUserForm(false); setEditUserId(null) }} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
+                  <button onClick={saveUser} className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-semibold">{editUserId ? 'Update' : 'Tambah'}</button>
+                </div>
+              </div>
+            )}
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <table className="w-full">
+                <thead><tr className="bg-gray-50 border-b border-gray-100">
+                  {['Nama','Email','Role','Status','Aksi'].map(h => <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>)}
+                </tr></thead>
+                <tbody className="divide-y divide-gray-50">
+                  {users.map((u: any) => (
+                    <tr key={u.id} className="hover:bg-gray-50/50">
+                      <td className="px-4 py-3 text-sm font-medium">{u.name}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500">{u.email}</td>
+                      <td className="px-4 py-3"><Badge variant={u.role === 'SUPERADMIN' ? 'red' : u.role === 'ADMIN' ? 'blue' : 'default'}>{u.role}</Badge></td>
+                      <td className="px-4 py-3"><Badge variant={u.isActive ? 'green' : 'default'}>{u.isActive ? 'Aktif' : 'Nonaktif'}</Badge></td>
+                      <td className="px-4 py-3"><div className="flex gap-1">
+                        <button onClick={() => { setEditUserId(u.id); setUserForm({ name: u.name, email: u.email, password: '', role: u.role }); setShowUserForm(true) }}
+                          className="text-xs px-2 py-1 border border-gray-200 rounded-lg text-gray-400 hover:text-blue-600">Edit</button>
+                        <button onClick={() => deleteUser(u.id)}
+                          className="text-xs px-2 py-1 border border-red-100 bg-red-50 rounded-lg text-red-400 hover:bg-red-100">Hapus</button>
+                      </div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* HAK AKSES */}
+        {activeTab === 'access' && isSuperAdmin && (
+          <div className="space-y-4 max-w-2xl">
+            {['ADMIN', 'CASHIER'].map(role => (
+              <div key={role} className="bg-white border border-gray-200 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold">{role === 'ADMIN' ? ' Admin' : ''}</h3>
+                  <button onClick={() => saveAccess(role, roleAccess[role])}
+                    className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-700">
+                    <Save className="w-3.5 h-3.5" /> Simpan Akses
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {Object.entries(MENU_LABELS).map(([menu, label]) => (
+                    role === 'CASHIER' && ['admin', 'settings'].includes(menu) ? null :
+                    <label key={menu} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50">
+                      <input type="checkbox"
+                        checked={roleAccess[role]?.[menu] ?? false}
+                        onChange={e => setRoleAccess(prev => ({ ...prev, [role]: { ...prev[role], [menu]: e.target.checked } }))}
+                        disabled={menu === 'kasir'}
+                        className="w-4 h-4 rounded accent-blue-600" />
+                      <span className="text-sm text-gray-600">{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* DEVELOPER */}
         {activeTab === 'developer' && isSuperAdmin && (
           <div className="max-w-lg space-y-4">
@@ -548,51 +637,6 @@ export default function SettingsPage() {
         )}
 
         {/* USERS */}
-        {activeTab === 'pending' && isSuperAdmin && (
-          <div className="space-y-4">
-            <h2 className="text-sm font-bold text-gray-700">Pending Users — Menunggu Persetujuan</h2>
-            {pendingUsers.length === 0 ? (
-              <div className="text-center py-10 text-gray-400 text-sm">Tidak ada user yang menunggu persetujuan</div>
-            ) : (
-              <div className="space-y-2">
-                {pendingUsers.map(u => (
-                  <div key={u.id} className="bg-white border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-                    <div>
-                      <div className="font-semibold text-sm text-gray-800">{u.name}</div>
-                      <div className="text-xs text-gray-400">{u.email}</div>
-                    </div>
-                    <div className="flex gap-2 items-center">
-                      <select defaultValue="CASHIER" id={`role-${u.id}`}
-                        className="text-xs border rounded-lg px-2 py-1.5 text-gray-700">
-                        <option value="CASHIER">Kasir</option>
-                        <option value="ADMIN">Admin</option>
-                      </select>
-                      <button onClick={async () => {
-                        const el = document.getElementById(`role-${u.id}`) as HTMLSelectElement
-                        const role = el?.value || 'CASHIER'
-                        const res = await fetch(`/api/users/${u.id}`, {
-                          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ isActive: true, role }),
-                        })
-                        if (res.ok) { toast({ title: 'User disetujui!' }); load() }
-                      }}
-                        className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 font-semibold">
-                        Setujui
-                      </button>
-                      <button onClick={async () => {
-                        const res = await fetch(`/api/users/${u.id}`, { method: 'DELETE' })
-                        if (res.ok) { toast({ title: 'User ditolak & dihapus' }); load() }
-                      }}
-                        className="text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-200 font-semibold">
-                        Tolak
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
       </div>
     </div>

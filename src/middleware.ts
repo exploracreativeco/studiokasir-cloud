@@ -90,7 +90,8 @@ export async function middleware(req: NextRequest) {
   // Step 3: JWT token
   // NextAuth v5: cookie di HTTPS bernama __Secure-authjs.session-token,
   // di HTTP bernama authjs.session-token. Coba keduanya.
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'studiokasir-secret-key-2024'
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+  if (!secret) return NextResponse.redirect(new URL('/login', req.url)) // env wajib di-set
   const isHttps = req.nextUrl.protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https'
   let token = null
   if (isHttps) {
