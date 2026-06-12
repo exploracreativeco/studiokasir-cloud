@@ -158,6 +158,106 @@ export default function GeneratePage() {
 
   useEffect(() => { if (lapInvestorId) fetchTotalBH(lapInvestorId) }, [lapInvestorId])
 
+  // ============ ADVANCE: isi otomatis + kirim langsung ============
+  const [autoBusy, setAutoBusy] = useState(false)
+
+  // ⚡ Slip: honor event + bonus absen + jam/hari dari shift (item manual aman)
+  async function isiOtomatisSlip() {
+    if (!slipKaryawanId) { toast({ title: 'Pilih karyawan dulu', variant: 'destructive' }); return }
+    setAutoBusy(true)
+    try {
+      const res = await fetch(`/api/manajemen/gaji-auto?bulan=${slipBulan + 1}&tahun=${slipTahun}`)
+      const data = await res.json()
+      const hasil = data.results?.[slipKaryawanId]
+      if (!hasil || !hasil.userName) { toast({ title: 'Karyawan tidak ter-link akun (samakan nama di Team)', variant: 'destructive' }); setAutoBusy(false); return }
+      const manual = slipJobs.filter((j: any) => !j.auto)
+      setSlipJobs([...manual, ...(hasil.items || [])])
+      if (hasil.shiftHari > 0) {
+        setSlipHariKerja(hasil.shiftHari)
+        setSlipJamNormal(Math.round((hasil.shiftJam / hasil.shiftHari) * 10) / 10)
+      }
+      toast({ title: `✓ Terisi: ${(hasil.items || []).length} job otomatis${hasil.shiftHari > 0 ? ` + ${hasil.shiftHari} hari dari shift` : ''}` })
+    } catch { toast({ title: 'Gagal menarik data', variant: 'destructive' }) }
+    setAutoBusy(false)
+  }
+
+  function buildSlipTextGen(): string {
+    const k = karyawans.find(x => x.id === slipKaryawanId)
+    if (!k) return ''
+    const pokok = k.rateJam * slipJamNormal * slipHariKerja
+    const lembur = k.rateLembur * slipJamLembur
+    const tertentu = (slipRecord?.jamKerjaTertentuJam || 0) * (slipRecord?.jamKerjaTertentuRate || 0)
+    const insentif = ((k as any).punyaInsentif ?? k.insentifPersen > 0) ? Math.round(slipOmzet * k.insentifPersen / 100) : 0
+    const jobs = slipJobs.filter(j => j.namaJob?.trim())
+    const jobTot = jobs.reduce((s, j) => s + j.nominal, 0)
+    return [
+      `SLIP GAJI — ${BULAN_FULL[slipBulan]} ${slipTahun}`,
+      `${k.nama} (${k.posisi})`,
+      '─'.repeat(28),
+      `Gaji Pokok (${slipJamNormal} jam × ${slipHariKerja} hari): ${formatRupiah(pokok)}`,
+      ...(lembur > 0 ? [`Lembur (${slipJamLembur} jam): ${formatRupiah(lembur)}`] : []),
+      ...(tertentu > 0 ? [`Kerja Tertentu: ${formatRupiah(tertentu)}`] : []),
+      ...(insentif > 0 ? [`Insentif: ${formatRupiah(insentif)}`] : []),
+      ...(jobs.length > 0 ? ['Job Tambahan:', ...jobs.map(j => `  • ${j.namaJob}: ${formatRupiah(j.nominal)}`)] : []),
+      '─'.repeat(28),
+      `TOTAL: ${formatRupiah(pokok + lembur + tertentu + insentif + jobTot)}`,
+      '', 'Terima kasih atas kerja kerasnya! 🙏', '— Explora Creative',
+    ].join('\n')
+  }
+
+  async function kirimSlipEmailGen() {
+    const text = buildSlipTextGen()
+    if (!text) { toast({ title: 'Pilih karyawan dulu', variant: 'destructive' }); return }
+    setAutoBusy(true)
+    try {
+      const res = await fetch(`/api/manajemen/gaji-auto?bulan=${slipBulan + 1}&tahun=${slipTahun}`)
+      const data = await res.json()
+      let to = data.results?.[slipKaryawanId]?.email
+      if (!to) to = prompt('Email tidak ditemukan dari akun. Masukkan email tujuan:') || ''
+      if (!to) { setAutoBusy(false); return }
+      const send = await fetch('/api/manajemen/gaji-slip', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to, subject: `Slip Gaji ${BULAN_FULL[slipBulan]} ${slipTahun}`, text }),
+      })
+      const d = await send.json().catch(() => ({}))
+      toast(send.ok ? { title: `✓ Slip terkirim ke ${to}` } : { title: d.error || 'Gagal kirim', variant: 'destructive' })
+    } catch { toast({ title: 'Gagal kirim', variant: 'destructive' }) }
+    setAutoBusy(false)
+  }
+
+  const kirimWA = (text: string) => window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank')
+
+  function buildInvoiceText(): string {
+    const items = invItems.filter(i => i.deskripsi?.trim())
+    const total = items.reduce((s, i) => s + i.total, 0) - invDiskon
+    return [
+      `INVOICE ${invNomor || ''}`.trim(),
+      `${invClient || 'Customer'} — ${invTanggal}`,
+      '─'.repeat(28),
+      ...items.map(i => `${i.deskripsi}: ${formatRupiah(i.total)}`),
+      ...(invDiskon > 0 ? [`Diskon: -${formatRupiah(invDiskon)}`] : []),
+      '─'.repeat(28),
+      `TOTAL: ${formatRupiah(total)}`,
+      ...(invDP > 0 ? [`DP: ${formatRupiah(invDP)}`, `SISA: ${formatRupiah(total - invDP)}`] : []),
+      ...(invCatatan ? ['', invCatatan] : []),
+      '', 'Terima kasih! 📸 — Explora Creative',
+    ].join('\n')
+  }
+
+  function buildLaporanText(): string {
+    const inv = investors.find(x => x.id === lapInvestorId)
+    return [
+      `LAPORAN INVESTOR — ${BULAN_FULL[lapBulan]} ${lapTahun}`,
+      `Kepada: ${inv?.nama || 'Investor'}`,
+      '─'.repeat(28),
+      `Omzet bulan ini: ${formatRupiah(lapOmzet)}`,
+      `Bagi hasil Anda: ${formatRupiah(lapBagiHasil)}`,
+      ...(lapCatatan ? ['', `Catatan: ${lapCatatan}`] : []),
+      '', 'Terima kasih atas kepercayaannya 🙏', '— Explora Creative',
+    ].join('\n')
+  }
+
+
   async function saveLaporan() {
     if (!lapInvestorId) { toast({ title: 'Pilih investor', variant: 'destructive' }); return }
     setSavingLap(true)
@@ -515,6 +615,20 @@ export default function GeneratePage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <button onClick={isiOtomatisSlip} disabled={!slipKaryawanId || autoBusy}
+                  className="flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl py-2.5 text-xs font-bold disabled:opacity-40">
+                  ⚡ {autoBusy ? '...' : 'Isi Otomatis'}
+                </button>
+                <button onClick={kirimSlipEmailGen} disabled={!slipKaryawanId || autoBusy}
+                  className="flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 text-xs font-bold disabled:opacity-40">
+                  📧 Email
+                </button>
+                <button onClick={() => kirimWA(buildSlipTextGen())} disabled={!slipKaryawanId}
+                  className="flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white rounded-xl py-2.5 text-xs font-bold disabled:opacity-40">
+                  💬 WhatsApp
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <button onClick={saveSlipRecord} disabled={!slipKaryawanId}
                   className="flex items-center justify-center gap-2 border border-gray-300 text-gray-700 rounded-xl py-2.5 text-sm font-semibold hover:bg-gray-50 disabled:opacity-40">
@@ -775,6 +889,10 @@ export default function GeneratePage() {
                 <button onClick={async () => { await saveInvoiceToDb(); downloadPdf(`${invNomor || 'INV'}${invClient ? ' - ' + invClient : ''}`) }}
                   className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white rounded-xl py-3 text-sm font-semibold hover:bg-gray-800">
                   <Download className="w-4 h-4" /> Download Invoice
+                </button>
+                <button onClick={() => kirimWA(buildInvoiceText())}
+                  className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white rounded-xl py-2.5 text-sm font-semibold">
+                  💬 Kirim via WA
                 </button>
                 <button onClick={async () => { await saveInvoiceToDb(); downloadKuitansi() }}
                   className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 text-white rounded-xl py-3 text-sm font-semibold hover:bg-emerald-700">
@@ -1099,6 +1217,10 @@ export default function GeneratePage() {
                 <button onClick={async () => { await saveLapToDb(); downloadPdf(`LAPORAN-${invLaporan?.nama || 'investor'}-${BULAN_FULL[lapBulan]}-${lapTahun}`) }} disabled={!lapInvestorId}
                   className="flex items-center justify-center gap-2 bg-gray-900 text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-gray-800 disabled:opacity-40">
                   <Download className="w-4 h-4" /> Download PDF
+                </button>
+                <button onClick={() => kirimWA(buildLaporanText())} disabled={!lapInvestorId}
+                  className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white rounded-xl py-2.5 text-sm font-semibold disabled:opacity-40 col-span-2">
+                  💬 Kirim via WA
                 </button>
               </div>
             </div>
