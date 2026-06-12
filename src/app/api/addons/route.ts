@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { ctxBranchId, branchOr } from '@/lib/branch-context'
 
 const schema = z.object({
   name: z.string().min(1),
@@ -18,8 +19,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const activeOnly = searchParams.get('activeOnly') !== 'false'
 
+  const bid = await ctxBranchId(req)
   const addons = await prisma.addon.findMany({
-    where: activeOnly ? { isActive: true } : {},
+    where: { ...(activeOnly ? { isActive: true } : {}), ...branchOr(bid) },
     orderBy: [{ urutan: 'asc' }, { name: 'asc' }],
   })
 
@@ -38,7 +40,8 @@ export async function POST(req: NextRequest) {
   const lastAddon = await prisma.addon.findFirst({ orderBy: { urutan: 'desc' } })
   const urutan = parsed.data.urutan ?? ((lastAddon?.urutan || 0) + 1)
 
-  const addon = await prisma.addon.create({ data: { ...parsed.data, urutan } })
+  const bidPost = await ctxBranchId(req)
+  const addon = await prisma.addon.create({ data: { ...parsed.data, urutan, branchId: parsed.data.branchId || bidPost || null } })
   return NextResponse.json(addon, { status: 201 })
 }
 

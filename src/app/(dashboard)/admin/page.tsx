@@ -54,7 +54,8 @@ function SortableAddonRow({ addon, onEdit, onDelete }: { addon: any; onEdit: (a:
 }
 
 
-function StudioSelect({ value, onChange, branches }: { value: string; onChange: (v: string) => void; branches: any[] }) {
+function StudioSelect({ value, onChange, branches, hidden }: { value: string; onChange: (v: string) => void; branches: any[]; hidden?: boolean }) {
+  if (hidden) return null
   return (
     <div><label className="block text-xs font-medium text-gray-500 mb-1">Studio</label>
       <select value={value} onChange={e => onChange(e.target.value)}
@@ -176,6 +177,8 @@ export default function AdminPage() {
 
   useEffect(() => { load() }, [])
   useEffect(() => { fetch('/api/branches').then(r => r.json()).then(b => Array.isArray(b) && setBranchList(b)).catch(() => {}) }, [])
+  const [ctxBranch, setCtxBranch] = useState<string | null>(null)
+  useEffect(() => { fetch('/api/context').then(r => r.json()).then(c => setCtxBranch(c?.branchSlug || null)).catch(() => {}) }, [])
 
   async function toggleActive(endpoint: string, item: any, activeField = 'isActive') {
     const res = await fetch(endpoint, {
@@ -430,7 +433,7 @@ export default function AdminPage() {
                     placeholder="Contoh: 30 menit sesi foto, 10 file edited, backdrop pilihan..."
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white resize-none" />
-                  <StudioSelect value={packageForm.branchId} onChange={v => setPackageForm(f => ({ ...f, branchId: v }))} branches={branchList} />
+                  <StudioSelect value={packageForm.branchId} onChange={v => setPackageForm(f => ({ ...f, branchId: v }))} branches={branchList} hidden={!!ctxBranch} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => { setShowPackageForm(false); setEditPackageId(null) }} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
@@ -655,7 +658,7 @@ export default function AdminPage() {
                   <div><label className="block text-xs font-medium text-gray-500 mb-1">Harga (Rp)</label>
                     <input type="number" value={addonForm.price || 0} onChange={e => setAddonForm(f => ({ ...f, price: Number(e.target.value) }))}
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
-                  <StudioSelect value={addonForm.branchId} onChange={v => setAddonForm(f => ({ ...f, branchId: v }))} branches={branchList} />
+                  <StudioSelect value={addonForm.branchId} onChange={v => setAddonForm(f => ({ ...f, branchId: v }))} branches={branchList} hidden={!!ctxBranch} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowAddonForm(false)} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
@@ -710,7 +713,7 @@ export default function AdminPage() {
                   <div><label className="block text-xs font-medium text-gray-500 mb-1">Nilai</label>
                     <input type="number" value={promoForm.discountValue || 0} onChange={e => setPromoForm(f => ({ ...f, discountValue: Number(e.target.value) }))}
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
-                  <StudioSelect value={promoForm.branchId} onChange={v => setPromoForm(f => ({ ...f, branchId: v }))} branches={branchList} />
+                  <StudioSelect value={promoForm.branchId} onChange={v => setPromoForm(f => ({ ...f, branchId: v }))} branches={branchList} hidden={!!ctxBranch} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowPromoForm(false)} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
@@ -760,7 +763,7 @@ export default function AdminPage() {
                   <div><label className="block text-xs font-medium text-gray-500 mb-1">No. HP</label>
                     <input value={fotograferForm.phone} onChange={e => setFotograferForm(f => ({ ...f, phone: e.target.value }))} placeholder="08xxxxxxxxxx"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
-                  <StudioSelect value={fotograferForm.branchId} onChange={v => setFotograferForm(f => ({ ...f, branchId: v }))} branches={branchList} />
+                  <StudioSelect value={fotograferForm.branchId} onChange={v => setFotograferForm(f => ({ ...f, branchId: v }))} branches={branchList} hidden={!!ctxBranch} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowFotograferForm(false)} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
@@ -814,7 +817,7 @@ export default function AdminPage() {
                   <div><label className="block text-xs font-medium text-gray-500 mb-1">Atas Nama</label>
                     <input value={metodeForm.atasNama} onChange={e => setMetodeForm(f => ({ ...f, atasNama: e.target.value }))} placeholder="Nama pemilik"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
-                  <StudioSelect value={metodeForm.branchId} onChange={v => setMetodeForm(f => ({ ...f, branchId: v }))} branches={branchList} />
+                  <StudioSelect value={metodeForm.branchId} onChange={v => setMetodeForm(f => ({ ...f, branchId: v }))} branches={branchList} hidden={!!ctxBranch} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowMetodeForm(false)} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
@@ -967,12 +970,12 @@ export default function AdminPage() {
                   <div><label className="block text-xs font-medium text-gray-500 mb-1">Satuan</label>
                     <input value={otsPaketForm.satuan} onChange={e => setOtsPaketForm(f => ({ ...f, satuan: e.target.value }))} placeholder="lembar / sesi"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
-                  <div><label className="block text-xs font-medium text-gray-500 mb-1">Studio</label>
+                  {!ctxBranch && <div><label className="block text-xs font-medium text-gray-500 mb-1">Studio</label>
                     <select value={otsPaketForm.branchId} onChange={e => setOtsPaketForm(f => ({ ...f, branchId: e.target.value }))}
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white">
                       <option value="">Semua Studio</option>
                       {branchList.map((b: any) => <option key={b.id} value={b.id}>{b.nama}</option>)}
-                    </select></div>
+                    </select></div>}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Background</label>

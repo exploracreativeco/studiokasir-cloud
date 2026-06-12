@@ -72,6 +72,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [studioName, setStudioName] = useState('StudioKasir')
   const [appMode, setAppMode] = useState<string>('manajemen')
   const [branchSlug, setBranchSlug] = useState<string | null>(null)
+  const [canSwitch, setCanSwitch] = useState(false)
+  const [branchOptions, setBranchOptions] = useState<Array<{ id: string; slug: string; nama: string }>>([])
+
+  async function switchStudio(slug: string) {
+    await fetch('/api/context', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ branchSlug: slug }) })
+    window.location.reload()
+  }
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(s => {
@@ -81,6 +88,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetch('/api/context').then(r => r.json()).then(c => {
       if (c?.mode) setAppMode(c.mode)
       setBranchSlug(c?.branchSlug || null)
+      setCanSwitch(!!c?.canSwitch)
+      setBranchOptions(Array.isArray(c?.branches) ? c.branches : [])
     }).catch(() => {})
     // Telemetry ping — kirim nama studio ke developer (silent, tidak mempengaruhi UI)
     fetch('/api/telemetry', { method: 'POST' }).catch(() => {})
@@ -221,11 +230,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button onClick={() => setMobileOpen(true)} className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:bg-gray-100">
             <Menu className="w-5 h-5" />
           </button>
-          {branchSlug && (
+          {canSwitch && appMode === 'manajemen' ? (
+            <select value={branchSlug || ''} onChange={e => switchStudio(e.target.value)}
+              title="Switch studio — semua halaman mengikuti"
+              className="text-[11px] font-bold uppercase tracking-wider bg-gray-900 text-white px-2 py-1.5 rounded-lg border-0 cursor-pointer">
+              <option value="">🏢 SEMUA STUDIO</option>
+              {branchOptions.map(b => <option key={b.id} value={b.slug}>{b.nama.toUpperCase()}</option>)}
+            </select>
+          ) : branchSlug ? (
             <span className="text-[10px] font-bold uppercase tracking-wider bg-gray-900 text-white px-2 py-1 rounded">
               {branchSlug}
             </span>
-          )}
+          ) : null}
           <div className="flex-1" />
           {/* Quick action shortcuts */}
           <div className="hidden sm:flex items-center gap-1.5">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { ctxBranchId, branchOr } from '@/lib/branch-context'
 
 const schema = z.object({
   nama: z.string().min(1),
@@ -22,8 +23,10 @@ export async function GET(req: NextRequest) {
   const jenis = searchParams.get('jenis') || ''
   const activeOnly = searchParams.get('activeOnly') !== 'false'
 
+  const bid = await ctxBranchId(req)
   const pakets = await prisma.otsPaket.findMany({
     where: {
+      ...branchOr(bid),
       ...(activeOnly && { isActive: true }),
       ...(jenis && { jenis }),
     },
@@ -34,6 +37,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const bidPost = await ctxBranchId(req)
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -46,7 +50,7 @@ export async function POST(req: NextRequest) {
     const paket = await prisma.otsPaket.create({
       data: {
         ...data,
-        branchId: branchId || null,
+        branchId: branchId || bidPost || null,
         backgrounds: {
           create: backgrounds.filter(b => b.trim()).map(nama => ({ nama })),
         },

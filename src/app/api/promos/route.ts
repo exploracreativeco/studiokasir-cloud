@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { ctxBranchId, branchOr } from '@/lib/branch-context'
 
 const schema = z.object({
   name: z.string().min(1),
@@ -16,7 +17,9 @@ export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const promos = await prisma.promoCode.findMany({ orderBy: { createdAt: 'desc' } })
+  const bid = await ctxBranchId(req)
+  const promos = await prisma.promoCode.findMany({
+    where: branchOr(bid), orderBy: { createdAt: 'desc' } })
   return NextResponse.json(promos)
 }
 
@@ -31,7 +34,8 @@ export async function POST(req: NextRequest) {
   const existing = await prisma.promoCode.findUnique({ where: { code: parsed.data.code } })
   if (existing) return NextResponse.json({ error: 'Kode promo sudah ada' }, { status: 409 })
 
-  const promo = await prisma.promoCode.create({ data: parsed.data })
+  const bidPost = await ctxBranchId(req)
+  const promo = await prisma.promoCode.create({ data: { ...parsed.data, branchId: parsed.data.branchId || bidPost || null } })
   return NextResponse.json(promo, { status: 201 })
 }
 

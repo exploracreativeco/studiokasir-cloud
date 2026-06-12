@@ -45,7 +45,13 @@ export async function middleware(req: NextRequest) {
   const { mode, branchSlug } = resolveBranchContext(req.headers.get('host') || '')
   const requestHeaders = new Headers(req.headers)
   requestHeaders.set(MODE_HEADER, mode)
-  if (branchSlug) requestHeaders.set(BRANCH_HEADER, branchSlug)
+  // Switch studio (SUPERADMIN): cookie override — hanya di mode manajemen.
+  // Subdomain kasir tetap terkunci ke studionya (hostname menang).
+  const override = req.cookies.get('branch-override')?.value
+  const effectiveBranch = mode === 'manajemen' && override !== undefined
+    ? (override || null) // '' = Semua Studio
+    : branchSlug
+  if (effectiveBranch) requestHeaders.set(BRANCH_HEADER, effectiveBranch)
   else requestHeaders.delete(BRANCH_HEADER)
   const withBranch = { request: { headers: requestHeaders } }
 

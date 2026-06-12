@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { ctxBranchId, branchOr } from '@/lib/branch-context'
 
 const schema = z.object({ name: z.string().min(1), phone: z.string().optional(), isActive: z.boolean().default(true),
   branchId: z.string().nullable().optional(),
@@ -12,8 +13,9 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { searchParams } = new URL(req.url)
   const activeOnly = searchParams.get('activeOnly') !== 'false'
+  const bid = await ctxBranchId(req)
   const fotografers = await prisma.fotografer.findMany({
-    where: activeOnly ? { isActive: true } : {},
+    where: { ...(activeOnly ? { isActive: true } : {}), ...branchOr(bid) },
     orderBy: { name: 'asc' },
     include: { _count: { select: { transactions: true } } },
   })
@@ -26,6 +28,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
-  const fotografer = await prisma.fotografer.create({ data: parsed.data })
+  const bidPost = await ctxBranchId(req)
+  const fotografer = await prisma.fotografer.create({ data: { ...parsed.data, branchId: parsed.data.branchId || bidPost || null } })
   return NextResponse.json(fotografer, { status: 201 })
 }
