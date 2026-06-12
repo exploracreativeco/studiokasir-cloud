@@ -1,0 +1,878 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// MULTI-BRANCH
+// branchId null di User/Fotografer = akses semua branch (owner/lintas studio)
+// branchId di master data & transaksi = milik branch tersebut
+// ============================================================
+
+model Branch {
+  id        String   @id @default(cuid())
+  slug      String   @unique // "explora", "yours" â€” dipakai di subdomain
+  nama      String
+  alamat    String?
+  whatsapp  String?
+  instagram String?
+  logoUrl   String?  @db.Text
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users            User[]
+  fotografer       Fotografer[]
+  packages         Package[]
+  addons           Addon[]
+  promoCodes       PromoCode[]
+  metodePembayaran MetodePembayaran[]
+  otsPaket         OtsPaket[]
+  transactions     Transaction[]
+  bookings         Booking[]
+  otsOrders        OtsOrder[]
+  expenses         Expense[]
+}
+
+model User {
+  warna String?
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  password     String        @default("")
+  role         String        @default("CASHIER")
+  isActive     Boolean       @default(true)
+  googleId     String?       @unique
+  avatarUrl    String?
+  branchId     String? // null = akses semua branch
+  branch       Branch?       @relation(fields: [branchId], references: [id])
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  otsOrders    OtsOrder[]
+  bookings     Booking[]
+  sessions     Session[]
+  accounts     Account[]
+
+  // Unifikasi identitas â€” User sebagai pusat
+  fotograferProfile FotograferLink?
+  karyawanProfile   KaryawanGaji?
+  expenses          Expense[]
+  shifts            Shift[]
+  shiftChanges      ShiftChangeLog[]
+  absenEntries      AbsenEntry[]
+  eventCrews        EventCrew[]
+
+  @@index([branchId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RoleAccess {
+  id        String   @id @default(cuid())
+  role      String
+  menu      String
+  canAccess Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@unique([role, menu])
+}
+
+model Customer {
+  id           String        @id @default(cuid())
+  name         String
+  email        String?
+  whatsapp     String?
+  instagram    String?
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  otsOrders    OtsOrder[]
+  bookings     Booking[]
+}
+
+model Fotografer {
+  id           String        @id @default(cuid())
+  name         String
+  phone        String?
+  isActive     Boolean       @default(true)
+  branchId     String? // null = bisa motret di semua branch
+  branch       Branch?       @relation(fields: [branchId], references: [id])
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  bookings     Booking[]
+  userLink     FotograferLink?
+
+  @@index([branchId])
+}
+
+// Link 1:1 Fotografer â†” User (unifikasi tanpa ganggu relasi historis)
+model FotograferLink {
+  id           String     @id @default(cuid())
+  fotograferId String     @unique
+  userId       String     @unique
+  fotografer   Fotografer @relation(fields: [fotograferId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+}
+
+model Package {
+  id               String            @id @default(cuid())
+  name             String
+  category         String
+  tier             String?
+  price            Int
+  pricePerPerson   Boolean           @default(false)
+  description      String?
+  isActive         Boolean           @default(true)
+  branchId         String?
+  branch           Branch?           @relation(fields: [branchId], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  transactionItems TransactionItem[]
+  biayaOps         PackageBiayaOps[]
+
+  @@index([branchId])
+}
+
+model PackageCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  label     String
+  perOrang  Boolean  @default(false)
+  urutan    Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model PackageTier {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  label     String
+  urutan    Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model PackageBiayaOps {
+  id        String  @id @default(cuid())
+  packageId String
+  ukuran    String
+  jenis     String
+  jumlah    Int     @default(1)
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+}
+
+model BiayaOpsSatuan {
+  id        String   @id @default(cuid())
+  ukuran    String
+  jenis     String
+  harga     Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MetodePembayaran {
+  id            String        @id @default(cuid())
+  nama          String
+  nomorRekening String?
+  atasNama      String?
+  namaBank      String?
+  isActive      Boolean       @default(true)
+  urutan        Int           @default(0)
+  branchId      String?
+  branch        Branch?       @relation(fields: [branchId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  transactions  Transaction[]
+  otsOrders     OtsOrder[]
+
+  @@index([branchId])
+}
+
+model Addon {
+  id               String                 @id @default(cuid())
+  name             String
+  price            Int
+  isActive         Boolean                @default(true)
+  urutan           Int                    @default(0)
+  branchId         String?
+  branch           Branch?                @relation(fields: [branchId], references: [id])
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  transactionItems TransactionItemAddon[]
+
+  @@index([branchId])
+}
+
+model PromoCode {
+  id            String        @id @default(cuid())
+  name          String
+  code          String        @unique
+  discountType  String
+  discountValue Int
+  isActive      Boolean       @default(true)
+  branchId      String?
+  branch        Branch?       @relation(fields: [branchId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  transactions  Transaction[]
+
+  @@index([branchId])
+}
+
+model Transaction {
+  id                 String                @id @default(cuid())
+  invoiceNumber      String                @unique
+  customerId         String
+  userId             String
+  fotograferId       String?
+  metodePembayaranId String?
+  promoCodeId        String?
+  branchId           String?
+  branch             Branch?               @relation(fields: [branchId], references: [id])
+  subtotal           Int
+  discount           Int                   @default(0)
+  grandTotal         Int
+  dpAmount           Int                   @default(0)
+  diterimaSaatIni    Int                   @default(0)
+  remainingPayment   Int                   @default(0)
+  paymentStatus      String
+  jumlahOrang        Int?
+  hargaPerOrang      Int?
+  biayaOpsTotal      Int                   @default(0)
+  notes              String?
+  bookingId          String?
+  tanggalFoto        DateTime?
+  syncStatus         String                @default("PENDING")
+  syncSheet          String?
+  syncedAt           DateTime?
+  transactionDate    DateTime              @default(now())
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  customer           Customer              @relation(fields: [customerId], references: [id])
+  booking            Booking?              @relation(fields: [bookingId], references: [id])
+  user               User                  @relation(fields: [userId], references: [id])
+  fotografer         Fotografer?           @relation(fields: [fotograferId], references: [id])
+  metodePembayaran   MetodePembayaran?     @relation(fields: [metodePembayaranId], references: [id])
+  promoCode          PromoCode?            @relation(fields: [promoCodeId], references: [id])
+  items              TransactionItem[]
+  biayaOps           TransactionBiayaOps[]
+
+  @@index([branchId])
+  @@index([branchId, transactionDate])
+}
+
+model TransactionBiayaOps {
+  id            String      @id @default(cuid())
+  transactionId String
+  ukuran        String
+  jenis         String
+  jumlah        Int
+  hargaSatuan   Int
+  total         Int
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+model TransactionItem {
+  customItemName String?
+  id             String                 @id @default(cuid())
+  transactionId  String
+  packageId      String
+  quantity       Int                    @default(1)
+  price          Int
+  discount       Int                    @default(0)
+  promoCodeId    String?
+  jumlahOrang    Int?
+  hargaPerOrang  Int?
+  transaction    Transaction            @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  package        Package                @relation(fields: [packageId], references: [id])
+  addons         TransactionItemAddon[]
+}
+
+model TransactionItemAddon {
+  id                String          @id @default(cuid())
+  transactionItemId String
+  addonId           String
+  quantity          Int             @default(1)
+  price             Int
+  transactionItem   TransactionItem @relation(fields: [transactionItemId], references: [id], onDelete: Cascade)
+  addon             Addon           @relation(fields: [addonId], references: [id])
+}
+
+model OtsOrder {
+  id                 String            @id @default(cuid())
+  orderNumber        String            @unique
+  jenis              String
+  customerId         String?
+  namaCustomer       String
+  whatsapp           String?
+  userId             String
+  metodePembayaranId String?
+  branchId           String?
+  branch             Branch?           @relation(fields: [branchId], references: [id])
+  total              Int
+  statusId           String?
+  notes              String?
+  syncStatus         String            @default("PENDING")
+  syncSheet          String?
+  syncedAt           DateTime?
+  orderDate          DateTime          @default(now())
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  customer           Customer?         @relation(fields: [customerId], references: [id])
+  user               User              @relation(fields: [userId], references: [id])
+  metodePembayaran   MetodePembayaran? @relation(fields: [metodePembayaranId], references: [id])
+  status             OtsStatus?        @relation(fields: [statusId], references: [id])
+  items              OtsOrderItem[]
+
+  @@index([branchId])
+  @@index([branchId, orderDate])
+}
+
+model OtsOrderItem {
+  id         String   @id @default(cuid())
+  otsOrderId String
+  deskripsi  String
+  ukuran     String?
+  jumlah     Int      @default(1)
+  harga      Int
+  catatan    String?
+  otsOrder   OtsOrder @relation(fields: [otsOrderId], references: [id], onDelete: Cascade)
+}
+
+model OtsStatus {
+  id        String     @id @default(cuid())
+  nama      String
+  warna     String     @default("#6b7280")
+  urutan    Int        @default(0)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  orders    OtsOrder[]
+}
+
+model OtsJenisCustom {
+  id        String   @id @default(cuid())
+  nama      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model OtsPaket {
+  id          String               @id @default(cuid())
+  nama        String
+  jenis       String
+  harga       Int
+  satuan      String               @default("pcs")
+  isActive    Boolean              @default(true)
+  urutan      Int                  @default(0)
+  branchId    String?
+  branch      Branch?              @relation(fields: [branchId], references: [id])
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  backgrounds OtsPaketBackground[]
+
+  @@index([branchId])
+}
+
+model OtsPaketBackground {
+  id      String   @id @default(cuid())
+  paketId String
+  nama    String
+  paket   OtsPaket @relation(fields: [paketId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id         String    @id @default(cuid())
+  userId     String? // siapa yang input (audit trail)
+  user       User?     @relation(fields: [userId], references: [id])
+  title      String
+  category   String
+  amount     Int
+  date       DateTime
+  notes      String?
+  branchId   String?
+  branch     Branch?   @relation(fields: [branchId], references: [id])
+  syncStatus String    @default("PENDING")
+  syncSheet  String?
+  syncedAt   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([branchId])
+  @@index([branchId, date])
+}
+
+model Setting {
+  id              String    @id @default(cuid())
+  studioName      String    @default("Kexplora Studio")
+  address         String?
+  whatsapp        String?
+  instagram       String?
+  invoiceFooter   String?
+  logoUrl         String?   @db.Text
+  webhookUrl      String?
+  spreadsheetId   String?
+  emailHost       String?
+  emailPort       Int?      @default(587)
+  emailUser       String?
+  emailPass       String?
+  emailFrom       String?
+  emailSubject    String?
+  emailTemplate   String?   @db.Text
+  thermalSize     String?   @default("80mm")
+  syaratKetentuan String?
+  backupEmail     String?
+  backupSchedule  String?   @default("OFF")
+  backupTime      String?   @default("22:00")
+  backupDay       String?   @default("1")
+  lastBackupAt    DateTime?
+  backupIncludeExcel String? @default("true")
+  backupLocalFolder  String? @default("true")
+  googleClientId     String?
+  googleClientSecret String?
+  gdriveServiceKey String?  @db.Text
+  gdriveFolderId   String?
+  gdriveFileId     String?
+  gdriveSchedule   String?  @default("OFF")
+  gdriveLastSync   DateTime?
+  ownerNama        String?
+  ownerJabatan     String?
+  updatedAt       DateTime  @updatedAt
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  bookingNumber String        @default("")
+  customerId    String?
+  namaCustomer  String
+  whatsapp      String?
+  keperluan     String
+  tanggalSesi   DateTime?
+  dpAmount      Int           @default(0)
+  catatan       String?
+  status        String        @default("DIBAYAR")
+  fotograferId  String?
+  tanggalFoto   DateTime?
+  branchId      String?
+  branch        Branch?       @relation(fields: [branchId], references: [id])
+  syncStatus    String        @default("PENDING")
+  syncSheet     String?
+  syncedAt      DateTime?
+  userId        String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  fotografer    Fotografer?   @relation(fields: [fotograferId], references: [id])
+  transactions  Transaction[]
+
+  @@index([branchId])
+  @@index([branchId, tanggalSesi])
+}
+
+// ============================================================
+// MANAJEMEN
+// ============================================================
+
+model StudioProfil {
+  id        String   @id @default(cuid())
+  nama      String
+  alamat    String?
+  noHp      String?
+  logoUrl   String?
+  rekening  String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model KaryawanGaji {
+  id             String               @id @default(cuid())
+  userId         String?              @unique // unifikasi: link ke User
+  user           User?                @relation(fields: [userId], references: [id])
+  nama           String
+  posisi         String
+  unitStudio     String?
+  rateJam        Int                  @default(10000)
+  rateLembur     Int                  @default(20000)
+  insentifPersen Float                @default(0)
+  basisInsentif  String               @default("KESELURUHAN")
+  fotograferId   String?
+  studioProfilId String?
+  punyaInsentif  Boolean              @default(false)
+  aktif          Boolean              @default(true)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  jobTambahan    JobTambahanDefault[]
+  gajiRecords    GajiRecord[]
+}
+
+model JobTambahanDefault {
+  id         String       @id @default(cuid())
+  karyawanId String
+  namaJob    String
+  nominal    Int          @default(0)
+  karyawan   KaryawanGaji @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
+}
+
+model Investor {
+  publicToken  String?   @unique
+  lastAccessAt DateTime?
+  id          String            @id @default(cuid())
+  nama        String
+  modal       Int               @default(0)
+  skemaFlat   Int               @default(0)
+  skemaPersen Float             @default(0)
+  aktif       Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  laporan     LaporanInvestor[]
+}
+
+model LaporanInvestor {
+  id         String   @id @default(cuid())
+  investorId String
+  periode    String
+  omzet      Int      @default(0)
+  bagiHasil  Int      @default(0)
+  totalRoi   Float    @default(0)
+  catatan    String?
+  createdAt  DateTime @default(now())
+  investor   Investor @relation(fields: [investorId], references: [id], onDelete: Cascade)
+}
+
+model ManajemenSetting {
+  id                  String   @id @default(cuid())
+  ownerNama           String?
+  ownerJabatan        String?
+  pernyataanKepatuhan String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model GajiRecord {
+  id                   String       @id @default(cuid())
+  karyawanId           String
+  bulan                Int
+  tahun                Int
+  jamNormal            Float        @default(8)
+  hariKerja            Int          @default(25)
+  jamLembur            Float        @default(0)
+  jamKerjaTertentuJam  Float        @default(0)
+  jamKerjaTertentuRate Int          @default(0)
+  omzetInsentif        Int          @default(0)
+  jobTambahan          String?      @db.Text // LEGACY (data lama) â€” baru pakai jobTambahanItems
+  totalGajiPokok       Int          @default(0)
+  totalLembur          Int          @default(0)
+  totalInsentif        Int          @default(0)
+  totalJobTambahan     Int          @default(0)
+  totalGaji            Int          @default(0)
+  status               String       @default("DRAFT")
+  catatan              String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  karyawan             KaryawanGaji @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
+  jobTambahanItems     GajiJobTambahan[]
+}
+
+// Job tambahan per slip gaji â€” relasional, bisa di-query per orang
+model GajiJobTambahan {
+  id           String     @id @default(cuid())
+  gajiRecordId String
+  namaJob      String
+  nominal      Int        @default(0)
+  gajiRecord   GajiRecord @relation(fields: [gajiRecordId], references: [id], onDelete: Cascade)
+
+  @@index([gajiRecordId])
+}
+
+model InvoiceCustom {
+  id        String   @id @default(cuid())
+  userId    String
+  studioId  String?
+  nomor     String
+  tanggal   String
+  client    String?
+  items     String   @db.Text // JSON string
+  diskon    Int      @default(0)
+  dp        Int      @default(0)
+  total     Int      @default(0)
+  catatan   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GenerateRiwayat {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String // 'slip' | 'laporan'
+  label     String
+  data      String   @db.Text // JSON string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// ROLE DINAMIS â€” manajemen yang atur, bukan hardcode
+// User.role (string) menunjuk Role.slug. SUPERADMIN = isSystem.
+// ============================================================
+
+model Role {
+  id             String   @id @default(cuid())
+  slug           String   @unique // "SUPERADMIN", "ADMIN", "FOTOGRAFER", custom...
+  label          String // "Penanggung Jawab Studio"
+  defaultLanding String   @default("/jadwal") // halaman setelah login
+  isSystem       Boolean  @default(false) // SUPERADMIN: tidak bisa dihapus/dikunci
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ============================================================
+// EVENT (Explora Booth) â€” photobooth & videospin, event-based
+// ============================================================
+
+model Event {
+  id            String      @id @default(cuid())
+  branchId      String? // umumnya booth
+  nama          String // nama event/acara
+  klienNama     String
+  klienWhatsapp String?
+  jenis         String // PHOTOBOOTH | VIDEOSPIN | KEDUANYA | custom
+  tanggal       DateTime // tanggal event
+  jamMulai      String? // "14:00"
+  jamSelesai    String? // "20:00"
+  lokasi        String?
+  nilaiKontrak  Int         @default(0)
+  dpAmount      Int         @default(0)
+  statusBayar   String      @default("DP") // DP | LUNAS
+  status        String      @default("BOOKED") // BOOKED | PERSIAPAN | SELESAI | BATAL
+  peralatan     String?     @db.Text
+  catatan       String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  crews         EventCrew[]
+
+  @@index([branchId])
+  @@index([tanggal])
+}
+
+// Crew yang bertugas di event (+ honor per event, sync ke gaji nanti)
+model EventCrew {
+  id      String  @id @default(cuid())
+  eventId String
+  userId  String
+  peran   String? // operator booth, driver, dll
+  honor   Int     @default(0)
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+// ============================================================
+// JADWAL SHIFT â€” Mode 1: bebas isi. Struktur siap untuk
+// Mode 2 (pola otomatis) tanpa rombak.
+// ============================================================
+
+model Shift {
+  id        String   @id @default(cuid())
+  branchId  String // shift milik studio mana
+  userId    String // siapa yang bertugas
+  tanggal   DateTime // hari shift
+  jamMulai  String // "09:00"
+  jamSelesai String // "17:00"
+  tipe      String? // label bebas: REGULER | LEMBUR | dll
+  catatan   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  changes   ShiftChangeLog[]
+
+  @@index([branchId, tanggal])
+  @@index([userId, tanggal])
+}
+
+// History perubahan/tukar shift â€” siapa ubah apa kapan
+model ShiftChangeLog {
+  id          String   @id @default(cuid())
+  shiftId     String
+  changedById String // user yang melakukan perubahan
+  aksi        String // CREATE | UPDATE | TUKAR | DELETE
+  detail      String?  @db.Text // ringkasan perubahan (JSON: before/after)
+  createdAt   DateTime @default(now())
+  shift       Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  changedBy   User     @relation(fields: [changedById], references: [id])
+
+  @@index([shiftId])
+}
+
+// ============================================================
+// ABSENSI â€” template custom (field builder), timestamp server
+// anti-edit, mode menyusul tertanda, opsional approval
+// ============================================================
+
+model AbsenTemplate {
+  bonusMode    String  @default("NONE")
+  bonusNominal Int     @default(0)
+  bonusConfig  String?
+  id             String       @id @default(cuid())
+  nama           String // "Kebersihan", "Story IG", "Photobooth"
+  branchId       String? // null = berlaku semua branch
+  deskripsi      String?
+  fields         String       @db.Text // JSON: definisi isian [{key,label,type:foto|checklist|teks|angka|link|pilihan,required,options}]
+  wajibFoto      Boolean      @default(true)
+  perluApproval  Boolean      @default(false) // approval untuk entri menyusul
+  rolesTugas     String? // JSON array slug role yang kena tugas; null = semua
+  jadwal         String       @default("HARIAN") // HARIAN | PER_SHIFT | BEBAS
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  entries        AbsenEntry[]
+
+  @@index([branchId])
+}
+
+model AbsenEntry {
+  id          String        @id @default(cuid())
+  templateId  String
+  userId      String
+  branchId    String?
+  // Waktu kejadian (boleh manual untuk menyusul):
+  waktuKejadian DateTime
+  // Waktu submit SELALU otomatis server â€” tidak bisa diedit:
+  submittedAt DateTime      @default(now())
+  isMenyusul  Boolean       @default(false)
+  status      String        @default("DITERIMA") // DITERIMA | MENUNGGU_APPROVAL | DITOLAK
+  approvedById String?
+  values      String        @db.Text // JSON: isi field sesuai template
+  fotoUrls    String?       @db.Text // JSON array URL foto (Supabase Storage)
+  catatan     String?
+  template    AbsenTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([templateId, waktuKejadian])
+  @@index([userId, waktuKejadian])
+  @@index([branchId, waktuKejadian])
+}
+
+// ============================================================
+// BOOKING EKSTERNAL â€” penampung dari explorastudio.id &
+// yoursselfstudio.id. Endpoint mereka belum siap; struktur kita duluan.
+// ============================================================
+
+model BookingExternal {
+  id           String    @id @default(cuid())
+  branchId     String? // explora / yours
+  sumber       String // "explorastudio.id" | "yoursselfstudio.id"
+  externalId   String // ID booking di sistem mereka
+  namaCustomer String
+  whatsapp     String?
+  paket        String?
+  tanggalSesi  DateTime?
+  nominal      Int       @default(0)
+  status       String? // status dari sistem mereka
+  rawData      String?   @db.Text // JSON mentah respons endpoint
+  syncedAt     DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([sumber, externalId])
+  @@index([branchId, tanggalSesi])
+}
+
+// Config endpoint per sumber (URL + API key diisi nanti dari UI)
+model BookingExternalConfig {
+  id        String   @id @default(cuid())
+  branchId  String   @unique
+  sumber    String // domain sistem booking
+  endpointUrl String?
+  apiKey    String?
+  isActive  Boolean  @default(false)
+  lastSync  DateTime?
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// LANDING PAGE â€” konten editable dari UI manajemen
+// ============================================================
+
+model LandingSection {
+  id        String   @id @default(cuid())
+  key       String   @unique // "hero", "tentang", "brand_explora", "brand_yours", "brand_booth", "kontak"
+  judul     String?
+  konten    String?  @db.Text // JSON fleksibel: teks, gambar, urutan item
+  fotoUrls  String?  @db.Text // JSON array URL gambar
+  urutan    Int      @default(0)
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+
+// ============================================================
+// OPREC - Open Recruitment
+// ============================================================
+model Lowongan {
+  fotoUrl String?
+  rules   String? @db.Text
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  judul     String
+  posisi    String
+  branchId  String?
+  deskripsi String?   @db.Text
+  fields    String    @db.Text
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  pelamar   Pelamar[]
+}
+
+model Pelamar {
+  id         String   @id @default(cuid())
+  lowonganId String
+  nama       String
+  whatsapp   String
+  email      String?
+  jawaban    String   @db.Text
+  status     String   @default("BARU")
+  catatan    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  lowongan   Lowongan @relation(fields: [lowonganId], references: [id], onDelete: Cascade)
+
+  @@index([lowonganId, status])
+}

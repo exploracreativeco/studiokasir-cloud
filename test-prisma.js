@@ -1,0 +1,6 @@
+const { PrismaClient } = require('@prisma/client')
+const p = new PrismaClient()
+p.packageCategory.findMany()
+  .then(r => { console.log('Categories:', JSON.stringify(r)) })
+  .catch(e => { console.log('ERROR:', e.message) })
+  .finally(() => { p['$disconnect']() })

@@ -1,0 +1,95 @@
+/* ============================================================
+   LANDING — konsep "Viewfinder"
+   Palet: putih galeri + tinta + perak + aksen REC merah (hemat)
+   ============================================================ */
+.lp-root {
+  --lp-paper: #fafaf8;
+  --lp-ink: #0a0a0b;
+  --lp-silver: #8a8a93;
+  --lp-line: #e3e3df;
+  --lp-rec: #ff3b30;
+  background: var(--lp-paper);
+  color: var(--lp-ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.lp-display { font-family: var(--font-display), sans-serif; }
+.lp-mono {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lp-silver);
+}
+
+/* Bracket viewfinder — elemen tanda tangan */
+.lp-frame { position: relative; }
+.lp-frame::before,
+.lp-frame::after,
+.lp-frame > .lp-corner::before,
+.lp-frame > .lp-corner::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--lp-ink);
+}
+.lp-frame::before { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+.lp-frame::after { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+.lp-frame > .lp-corner::before { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+.lp-frame > .lp-corner::after { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
+/* Titik REC berkedip pelan */
+.lp-rec-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lp-rec);
+  animation: lp-blink 2.4s ease-in-out infinite;
+}
+@keyframes lp-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* Reveal on scroll */
+.lp-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.lp-reveal.lp-in { opacity: 1; transform: none; }
+
+/* Garis pemisah ala film strip */
+.lp-rule { border-top: 1px solid var(--lp-line); }
+
+/* Brand card hover */
+.lp-card { transition: transform 0.35s ease, box-shadow 0.35s ease; }
+.lp-card:hover { transform: translateY(-4px); }
+
+/* Tombol */
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: var(--lp-ink);
+  color: var(--lp-paper);
+  font-family: var(--font-display), sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  transition: background 0.25s ease;
+}
+.lp-btn:hover { background: #2a2a2e; }
+.lp-btn--ghost {
+  background: transparent;
+  color: var(--lp-ink);
+  border: 1.5px solid var(--lp-ink);
+}
+.lp-btn--ghost:hover { background: var(--lp-ink); color: var(--lp-paper); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-rec-dot { animation: none; }
+  .lp-reveal { opacity: 1; transform: none; transition: none; }
+  .lp-card { transition: none; }
+}
