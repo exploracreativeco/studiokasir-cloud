@@ -26,6 +26,7 @@ export const ALL_MENUS = [
   { key: 'karyawan', label: 'Karyawan' },
   { key: 'investorlink', label: 'Link Investor' },
   { key: 'landingsettings', label: 'Pengaturan Landing' },
+  { key: 'beranda', label: 'Beranda (Team)' },
   { key: 'about', label: 'Tentang' },
   // Fitur menyusul:
   { key: 'jadwal', label: 'Jadwal Shift' },

@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
-import { Camera, LayoutDashboard, ShoppingCart, Receipt, DollarSign, BarChart2, Table2, Settings, Settings2, LogOut, Bell, ChevronDown, Menu, Users, ClipboardList, ChevronLeft, ChevronRight, BookOpen, Info, Briefcase, FileOutput, Shield, UsersRound, CalendarDays, ClipboardCheck, PartyPopper, Link2, Megaphone, Globe } from 'lucide-react'
+import { Camera, LayoutDashboard, ShoppingCart, Receipt, DollarSign, BarChart2, Table2, Settings, Settings2, LogOut, Bell, ChevronDown, Menu, Users, ClipboardList, ChevronLeft, ChevronRight, BookOpen, Info, Briefcase, FileOutput, Shield, UsersRound, CalendarDays, ClipboardCheck, PartyPopper, Link2, Megaphone, Globe, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const ALL_NAV_ITEMS = [
   // OPERASIONAL
+  { href: '/beranda', label: 'Beranda', icon: Home, menu: 'beranda', group: 'Operasional' },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, menu: 'dashboard', group: 'Operasional' },
   { href: '/kasir', label: 'Kasir', icon: ShoppingCart, menu: 'kasir', group: 'Operasional' },
   { href: '/booking', label: 'DP', icon: BookOpen, menu: 'booking', group: 'Operasional' },

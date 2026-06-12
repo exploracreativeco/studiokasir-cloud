@@ -21,6 +21,7 @@ const MENU_PATHS: Record<string, string> = {
   '/karyawan': 'karyawan',
   '/investor-link': 'investorlink',
   '/pengaturan-landing': 'landingsettings',
+  '/beranda': 'beranda',
   '/jadwal': 'jadwal',
   '/absensi': 'absensi',
   '/event': 'event',
