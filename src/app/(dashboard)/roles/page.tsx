@@ -51,10 +51,10 @@ export default function RolesPage() {
     const res = await fetch('/api/roles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: fSlug.toUpperCase().trim(), label: fLabel.trim(), defaultLanding: fLanding }),
+      body: JSON.stringify({ slug: fSlug.toUpperCase().trim().replace(/\s+/g, '_'), label: fLabel.trim(), defaultLanding: fLanding.startsWith('/') ? fLanding : '/' + fLanding }),
     })
     const data = await res.json()
-    if (!res.ok) { setError(data.error || 'Gagal membuat role'); return }
+    if (!res.ok) { const det = data.details ? ' — ' + JSON.stringify(data.details.fieldErrors) : ''; setError((data.error || 'Gagal membuat role') + det); return }
     setShowForm(false); setFSlug(''); setFLabel(''); setFLanding('/jadwal')
     load()
   }
@@ -103,7 +103,7 @@ export default function RolesPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-8">
+    <div className="p-6 max-w-6xl mx-auto space-y-8 h-full overflow-y-auto pb-16">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Shield className="w-6 h-6 text-blue-600" />

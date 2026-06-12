@@ -68,6 +68,7 @@ export default function AdminPage() {
   const [metodes, setMetodes] = useState<any[]>([])
   const [otsStatuses, setOtsStatuses] = useState<any[]>([])
   const [otsPakets, setOtsPakets] = useState<any[]>([])
+  const [branchList, setBranchList] = useState<any[]>([])
   const [biayaOpsSatuan, setBiayaOpsSatuan] = useState<any[]>([])
 
   // Categories & Tiers
@@ -126,7 +127,7 @@ export default function AdminPage() {
   // OTS Paket form
   const [showOtsPaketForm, setShowOtsPaketForm] = useState(false)
   const [editOtsPaketId, setEditOtsPaketId] = useState<string | null>(null)
-  const [otsPaketForm, setOtsPaketForm] = useState({ nama: '', jenis: '', harga: 0, satuan: 'sesi', backgrounds: [''] })
+  const [otsPaketForm, setOtsPaketForm] = useState({ nama: '', jenis: '', harga: 0, satuan: 'sesi', branchId: '', backgrounds: [''] })
 
   // Biaya ops form
   const [showBiayaOpsForm, setShowBiayaOpsForm] = useState(false)
@@ -162,6 +163,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => { load() }, [])
+  useEffect(() => { fetch('/api/branches').then(r => r.json()).then(b => Array.isArray(b) && setBranchList(b)).catch(() => {}) }, [])
 
   async function toggleActive(endpoint: string, item: any, activeField = 'isActive') {
     const res = await fetch(endpoint, {
@@ -323,7 +325,7 @@ export default function AdminPage() {
   async function saveOtsPaket() {
     if (!otsPaketForm.nama) { toast({ title: 'Nama wajib diisi', variant: 'destructive' }); return }
     if (!otsPaketForm.jenis) { toast({ title: 'Pilih jenis dulu', variant: 'destructive' }); return }
-    const body = { ...otsPaketForm, harga: Number(otsPaketForm.harga) || 0, backgrounds: otsPaketForm.backgrounds.filter(b => b.trim()) }
+    const body = { ...otsPaketForm, harga: Number(otsPaketForm.harga) || 0, branchId: otsPaketForm.branchId || null, backgrounds: otsPaketForm.backgrounds.filter(b => b.trim()) }
     const res = editOtsPaketId
       ? await fetch(`/api/ots/paket/${editOtsPaketId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       : await fetch('/api/ots/paket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -332,7 +334,7 @@ export default function AdminPage() {
       toast({ title: 'Gagal menyimpan paket', description: typeof err.error === 'string' ? err.error : JSON.stringify(err.error?.fieldErrors || err.error || ''), variant: 'destructive' })
       return
     }
-    toast({ title: 'Paket OTS tersimpan!' }); setShowOtsPaketForm(false); setEditOtsPaketId(null); setOtsPaketForm({ nama: '', jenis: otsJenis[0]?.nama || '', harga: 0, satuan: 'sesi', backgrounds: [''] }); load()
+    toast({ title: 'Paket OTS tersimpan!' }); setShowOtsPaketForm(false); setEditOtsPaketId(null); setOtsPaketForm({ nama: '', jenis: otsJenis[0]?.nama || '', harga: 0, satuan: 'sesi', branchId: '', backgrounds: [''] }); load()
   }
 
   // -- BIAYA OPS --
@@ -927,7 +929,7 @@ export default function AdminPage() {
         {activeTab === 'ots-paket' && (
           <div className="space-y-3">
             <div className="flex justify-end">
-              <button onClick={() => { setShowOtsPaketForm(true); setEditOtsPaketId(null); setOtsPaketForm({ nama: '', jenis: otsJenis[0]?.nama || '', harga: 0, satuan: 'sesi', backgrounds: [''] }) }}
+              <button onClick={() => { setShowOtsPaketForm(true); setEditOtsPaketId(null); setOtsPaketForm({ nama: '', jenis: otsJenis[0]?.nama || '', harga: 0, satuan: 'sesi', branchId: '', backgrounds: [''] }) }}
                 className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-blue-700"><Plus className="w-3.5 h-3.5" /> Tambah Paket OTS</button>
             </div>
             {showOtsPaketForm && (
@@ -948,6 +950,12 @@ export default function AdminPage() {
                   <div><label className="block text-xs font-medium text-gray-500 mb-1">Satuan</label>
                     <input value={otsPaketForm.satuan} onChange={e => setOtsPaketForm(f => ({ ...f, satuan: e.target.value }))} placeholder="lembar / sesi"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
+                  <div><label className="block text-xs font-medium text-gray-500 mb-1">Studio</label>
+                    <select value={otsPaketForm.branchId} onChange={e => setOtsPaketForm(f => ({ ...f, branchId: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white">
+                      <option value="">Semua Studio</option>
+                      {branchList.map((b: any) => <option key={b.id} value={b.id}>{b.nama}</option>)}
+                    </select></div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Background</label>
@@ -969,19 +977,20 @@ export default function AdminPage() {
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <table className="w-full">
                 <thead><tr className="bg-gray-50 border-b border-gray-100">
-                  {['Nama','Jenis','Harga','Satuan','Background','Status','Aksi'].map(h => <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>)}
+                  {['Nama','Jenis','Studio','Harga','Satuan','Background','Status','Aksi'].map(h => <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>)}
                 </tr></thead>
                 <tbody className="divide-y divide-gray-50">
                   {otsPakets.map((p: any) => (
                     <tr key={p.id} className={`hover:bg-gray-50/50 ${!p.isActive ? 'opacity-50' : ''}`}>
                       <td className="px-4 py-3 text-sm font-medium">{p.nama}</td>
                       <td className="px-4 py-3"><Badge variant="purple">{p.jenis}</Badge></td>
+                      <td className="px-4 py-3 text-xs text-gray-500">{branchList.find((b: any) => b.id === p.branchId)?.nama || 'Semua'}</td>
                       <td className="px-4 py-3 text-sm">{formatRupiah(p.harga)}</td>
                       <td className="px-4 py-3 text-xs text-gray-500">/{p.satuan}</td>
                       <td className="px-4 py-3 text-xs text-gray-500">{p.backgrounds?.length || 0} bg</td>
                       <td className="px-4 py-3"><Badge variant={p.isActive ? 'green' : 'default'}>{p.isActive ? 'Aktif' : 'Nonaktif'}</Badge></td>
                       <td className="px-4 py-3"><div className="flex gap-1">
-                        <button onClick={() => { setEditOtsPaketId(p.id); setOtsPaketForm({ nama: p.nama, jenis: p.jenis, harga: p.harga, satuan: p.satuan, backgrounds: p.backgrounds?.map((b: any) => b.nama) || [''] }); setShowOtsPaketForm(true) }}
+                        <button onClick={() => { setEditOtsPaketId(p.id); setOtsPaketForm({ nama: p.nama, jenis: p.jenis, harga: p.harga, satuan: p.satuan, branchId: p.branchId || '', backgrounds: p.backgrounds?.map((b: any) => b.nama) || [''] }); setShowOtsPaketForm(true) }}
                           className="p-1.5 border border-gray-200 rounded-lg text-gray-400 hover:text-blue-600"><Pencil className="w-3.5 h-3.5" /></button>
                         <ToggleBtn item={p} endpoint={`/api/ots/paket/${p.id}`} />
                       </div></td>

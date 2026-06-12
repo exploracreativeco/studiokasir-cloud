@@ -17,7 +17,7 @@ const ALL_NAV_ITEMS = [
   { href: '/customers', label: 'Customer', icon: Users, menu: 'customers', group: 'Operasional' },
   { href: '/event', label: 'Event Booth', icon: PartyPopper, menu: 'event', group: 'Operasional' },
   // TIM
-  { href: '/karyawan', label: 'Karyawan', icon: UsersRound, menu: 'karyawan', group: 'Tim' },
+  { href: '/karyawan', label: 'Team', icon: UsersRound, menu: 'karyawan', group: 'Tim' },
   { href: '/jadwal', label: 'Jadwal Shift', icon: CalendarDays, menu: 'jadwal', group: 'Tim' },
   { href: '/absensi', label: 'Absensi', icon: ClipboardCheck, menu: 'absensi', group: 'Tim' },
   { href: '/oprec', label: 'Open Recruitment', icon: Megaphone, menu: 'oprec', group: 'Tim' },

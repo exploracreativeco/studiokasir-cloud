@@ -11,6 +11,7 @@ const schema = z.object({
   isActive: z.boolean().default(true),
   urutan: z.number().default(0),
   backgrounds: z.array(z.string()).default([]),
+  branchId: z.string().nullable().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -41,10 +42,11 @@ export async function POST(req: NextRequest) {
     const parsed = schema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-    const { backgrounds, ...data } = parsed.data
+    const { backgrounds, branchId, ...data } = parsed.data
     const paket = await prisma.otsPaket.create({
       data: {
         ...data,
+        branchId: branchId || null,
         backgrounds: {
           create: backgrounds.filter(b => b.trim()).map(nama => ({ nama })),
         },

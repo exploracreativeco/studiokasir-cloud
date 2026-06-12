@@ -1,7 +1,8 @@
 // ============================================================
-// api/order-publik — booking OTS dari link publik (tanpa login)
-// GET: daftar studio + paket OTS aktif
-// POST: buat OtsOrder (masuk transaksi OTS kasir seperti biasa)
+// api/order-publik — booking OTS publik per studio
+// GET            → daftar studio (untuk halaman pemilih)
+// GET ?branch=x  → info studio + paket miliknya (+paket "semua")
+// POST           → buat OtsOrder
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -18,16 +19,31 @@ const submitSchema = z.object({
   })).min(1),
 })
 
-export async function GET() {
-  const [branches, pakets] = await Promise.all([
-    prisma.branch.findMany({ where: { isActive: true }, select: { id: true, slug: true, nama: true }, orderBy: { nama: 'asc' } }),
-    prisma.otsPaket.findMany({
-      where: { isActive: true },
-      select: { id: true, nama: true, jenis: true, harga: true, satuan: true, branchId: true },
-      orderBy: [{ jenis: 'asc' }, { urutan: 'asc' }],
-    }),
-  ])
-  return NextResponse.json({ branches, pakets })
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const slug = searchParams.get('branch')
+
+  if (!slug) {
+    const branches = await prisma.branch.findMany({
+      where: { isActive: true, slug: { not: 'booth' } },
+      select: { id: true, slug: true, nama: true, alamat: true },
+      orderBy: { nama: 'asc' },
+    })
+    return NextResponse.json({ branches })
+  }
+
+  const branch = await prisma.branch.findUnique({
+    where: { slug },
+    select: { id: true, slug: true, nama: true, alamat: true, whatsapp: true, isActive: true },
+  })
+  if (!branch || !branch.isActive) return NextResponse.json({ error: 'Studio tidak ditemukan' }, { status: 404 })
+
+  const pakets = await prisma.otsPaket.findMany({
+    where: { isActive: true, OR: [{ branchId: null }, { branchId: branch.id }] },
+    select: { id: true, nama: true, jenis: true, harga: true, satuan: true },
+    orderBy: [{ jenis: 'asc' }, { urutan: 'asc' }],
+  })
+  return NextResponse.json({ branch, pakets })
 }
 
 export async function POST(req: NextRequest) {
@@ -35,7 +51,6 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: 'Data tidak valid' }, { status: 400 })
   const d = parsed.data
 
-  // Anti-spam ringan: maks 5 order publik per WA per hari
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const dup = await prisma.otsOrder.count({ where: { whatsapp: d.whatsapp, notes: { contains: '[PUBLIK]' }, createdAt: { gte: today } } })
   if (dup >= 5) return NextResponse.json({ error: 'Terlalu banyak order hari ini, hubungi kami via WA' }, { status: 429 })
@@ -49,18 +64,14 @@ export async function POST(req: NextRequest) {
   })
   const total = itemRows.reduce((s, r) => s + r.harga * r.jumlah, 0)
 
-  // userId wajib (relasi) → pakai akun SUPERADMIN pertama sebagai pencatat sistem
   const sysUser = await prisma.user.findFirst({ where: { role: 'SUPERADMIN' }, select: { id: true } })
   if (!sysUser) return NextResponse.json({ error: 'Sistem belum siap' }, { status: 500 })
-
-  // Status awal: urutan pertama yang aktif (mis. BARU)
   const status = await prisma.otsStatus.findFirst({ where: { isActive: true }, orderBy: { urutan: 'asc' } })
-  const jenis = pakets[0].jenis || 'PUBLIK'
 
   const order = await prisma.otsOrder.create({
     data: {
       orderNumber: `OTSP-${Date.now().toString(36).toUpperCase()}`,
-      jenis,
+      jenis: pakets[0].jenis || 'PUBLIK',
       namaCustomer: d.nama,
       whatsapp: d.whatsapp,
       userId: sysUser.id,

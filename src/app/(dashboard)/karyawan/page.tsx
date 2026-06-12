@@ -105,12 +105,12 @@ export default function KaryawanPage() {
         <div className="flex items-center gap-3">
           <UsersRound className="w-6 h-6 text-blue-600" />
           <div>
-            <h1 className="text-xl font-bold">Karyawan & User</h1>
+            <h1 className="text-xl font-bold">Team & User</h1>
             <p className="text-sm text-gray-500">Akun, role, dan penempatan studio</p>
           </div>
         </div>
         <button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg">
-          <Plus className="w-4 h-4" /> Tambah Karyawan
+          <Plus className="w-4 h-4" /> Tambah Team
         </button>
       </div>
 
@@ -127,7 +127,7 @@ export default function KaryawanPage() {
       {/* FORM */}
       {showForm && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-          <p className="text-sm font-bold">{editId ? 'Edit Karyawan' : 'Karyawan Baru'}</p>
+          <p className="text-sm font-bold">{editId ? 'Edit Anggota Team' : 'Anggota Team Baru'}</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nama lengkap" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm" />
             <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="email@gmail.com" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm" />
