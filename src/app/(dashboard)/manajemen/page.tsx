@@ -72,6 +72,8 @@ export default function ManajemenPage() {
   const [gajiRows, setGajiRows] = useState<Record<string, GajiRecord>>({}) // karyawanId -> record
   const [autoLoading, setAutoLoading] = useState(false)
   const [autoInfo, setAutoInfo] = useState('')
+  const [autoEmails, setAutoEmails] = useState<Record<string, string | null>>({}) // karyawanId -> email
+  const [slipModal, setSlipModal] = useState<{ mode: 'satu' | 'semua'; karyawanId?: string } | null>(null)
   const [editingCell, setEditingCell] = useState<{karyawanId: string; field: string} | null>(null)
   const [saving, setSaving] = useState<Record<string, boolean>>({})
   const [loadingGaji, setLoadingGaji] = useState(false)
@@ -177,6 +179,9 @@ export default function ManajemenPage() {
       const data = await res.json()
       if (!res.ok) { setAutoInfo(data.error || 'Gagal menarik data'); setAutoLoading(false); return }
       const aktifK = karyawans.filter(k => k.aktif)
+      const emails: Record<string, string | null> = {}
+      for (const k of aktifK) emails[k.id] = data.results?.[k.id]?.email || null
+      setAutoEmails(emails)
       let applied = 0
       setGajiRows(prev => {
         const next = { ...prev }
@@ -189,7 +194,13 @@ export default function ManajemenPage() {
           const manual = jobs.filter(j => !j.auto)
           const merged = [...manual, ...(hasil.items || [])]
           if ((hasil.items || []).length > 0) applied++
-          next[k.id] = calcRecord({ ...r, jobTambahan: JSON.stringify(merged) }, k)
+          // Jam & hari kerja otomatis dari Jadwal Shift (kalau ada datanya)
+          const patch: any = { jobTambahan: JSON.stringify(merged) }
+          if (hasil.shiftHari > 0) {
+            patch.hariKerja = hasil.shiftHari
+            patch.jamNormal = Math.round((hasil.shiftJam / hasil.shiftHari) * 10) / 10
+          }
+          next[k.id] = calcRecord({ ...r, ...patch }, k)
         }
         return next
       })
@@ -197,6 +208,47 @@ export default function ManajemenPage() {
       setAutoInfo(`✓ ${applied} karyawan dapat komponen otomatis${un ? ` · nama tidak cocok akun: ${data.unlinked.join(', ')}` : ''}. Jangan lupa Simpan Semua.`)
     } catch { setAutoInfo('Gagal menarik data') }
     setAutoLoading(false)
+  }
+
+  // ============ SLIP GAJI: rakit teks, kirim email / WA ============
+  const BULAN_NAMA = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
+  function buildSlipText(k: KaryawanGaji, r: GajiRecord) {
+    const jobs: JobItem[] = (() => { try { return JSON.parse(r.jobTambahan || '[]') } catch { return [] } })()
+    const lines = [
+      `SLIP GAJI — ${BULAN_NAMA[bulan - 1]} ${tahun}`,
+      `${k.nama} (${k.posisi})`,
+      '─'.repeat(28),
+      `Gaji Pokok (${r.jamNormal} jam × ${r.hariKerja} hari): ${formatRupiah(r.totalGajiPokok)}`,
+      ...(r.totalLembur > 0 ? [`Lembur (${r.jamLembur} jam): ${formatRupiah(r.totalLembur)}`] : []),
+      ...(r.totalKerjaTertentu > 0 ? [`Kerja Tertentu: ${formatRupiah(r.totalKerjaTertentu)}`] : []),
+      ...(r.totalInsentif > 0 ? [`Insentif: ${formatRupiah(r.totalInsentif)}`] : []),
+      ...(jobs.length > 0 ? ['Job Tambahan:', ...jobs.map(j => `  • ${j.namaJob}: ${formatRupiah(j.nominal)}`)] : []),
+      '─'.repeat(28),
+      `TOTAL: ${formatRupiah(r.totalGaji)}`,
+      '',
+      'Terima kasih atas kerja kerasnya! 🙏',
+      '— Explora Creative',
+    ]
+    return lines.join('\n')
+  }
+
+  async function kirimSlipEmail(k: KaryawanGaji, customText?: string): Promise<string | null> {
+    const r = gajiRows[k.id]
+    if (!r) return `${k.nama}: belum ada data gaji`
+    const to = autoEmails[k.id]
+    if (!to) return `${k.nama}: email tidak ditemukan (klik Tarik Otomatis dulu / samakan nama dengan akun)`
+    const res = await fetch('/api/manajemen/gaji-slip', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject: `Slip Gaji ${BULAN_NAMA[bulan - 1]} ${tahun} — ${k.nama}`, text: customText || buildSlipText(k, r) }),
+    })
+    if (!res.ok) { const d = await res.json().catch(() => ({})); return `${k.nama}: ${d.error || 'gagal'}` }
+    return null
+  }
+
+  function kirimSlipWA(k: KaryawanGaji) {
+    const r = gajiRows[k.id]
+    if (!r) { toast({ title: 'Belum ada data gaji bulan ini', variant: 'destructive' }); return }
+    window.open('https://wa.me/?text=' + encodeURIComponent(buildSlipText(k, r)), '_blank')
   }
 
   // Load rekap per karyawan
@@ -372,6 +424,10 @@ export default function ManajemenPage() {
                       className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
                       ⚡ {autoLoading ? 'Menarik…' : 'Tarik Otomatis'}
                     </button>
+                    <button onClick={() => setSlipModal({ mode: 'semua' })}
+                      className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg mr-2">
+                      📧 Kirim Semua Slip
+                    </button>
                     <button onClick={saveAllGaji} className="flex items-center gap-1.5 bg-gray-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-800">
                       <Save className="w-3.5 h-3.5" /> Simpan Semua
                     </button>
@@ -461,6 +517,10 @@ export default function ManajemenPage() {
                                   className="p-1.5 border border-gray-200 rounded-lg text-gray-400 hover:text-emerald-600 hover:border-emerald-200 disabled:opacity-50 transition-colors">
                                   {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                                 </button>
+                                <button onClick={() => setSlipModal({ mode: 'satu', karyawanId: k.id })} title="Kirim slip via email"
+                                  className="p-1.5 border border-gray-200 rounded-lg text-gray-400 hover:text-blue-600 hover:border-blue-200 transition-colors ml-1">📧</button>
+                                <button onClick={() => kirimSlipWA(k)} title="Kirim slip via WhatsApp"
+                                  className="p-1.5 border border-gray-200 rounded-lg text-gray-400 hover:text-green-600 hover:border-green-200 transition-colors ml-1">💬</button>
                               </td>
                             </tr>
                           )
@@ -871,6 +931,58 @@ export default function ManajemenPage() {
           </div>
         </div>
       )}
+      {/* MODAL KIRIM SLIP */}
+      {slipModal && (() => {
+        const targets = slipModal.mode === 'satu'
+          ? karyawans.filter(k => k.id === slipModal.karyawanId)
+          : karyawans.filter(k => k.aktif && gajiRows[k.id])
+        const first = targets[0]
+        return (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setSlipModal(null)}>
+            <div className="bg-white rounded-xl p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto space-y-3" onClick={e => e.stopPropagation()}>
+              <p className="font-bold text-sm">📧 Kirim Slip Gaji — {slipModal.mode === 'satu' ? first?.nama : `${targets.length} karyawan`}</p>
+              <p className="text-xs text-gray-400">{slipModal.mode === 'satu'
+                ? `Ke: ${autoEmails[first?.id || ''] || '(email tidak ditemukan — klik ⚡ Tarik Otomatis dulu)'}`
+                : 'Dikirim ke email akun masing-masing (yang ter-link nama). Isi di bawah = slip orang pertama sebagai contoh format; tiap orang menerima slipnya sendiri.'}</p>
+              <SlipEditor
+                initial={first && gajiRows[first.id] ? buildSlipText(first, gajiRows[first.id]) : ''}
+                editable={slipModal.mode === 'satu'}
+                onSend={async (text) => {
+                  const errs: string[] = []
+                  for (const k of targets) {
+                    const err = await kirimSlipEmail(k, slipModal.mode === 'satu' ? text : undefined)
+                    if (err) errs.push(err)
+                  }
+                  setSlipModal(null)
+                  toast(errs.length
+                    ? { title: `Selesai dengan ${errs.length} gagal`, description: errs.slice(0, 3).join(' · '), variant: 'destructive' }
+                    : { title: `Slip terkirim ke ${targets.length - errs.length} orang ✓` })
+                }}
+                onCancel={() => setSlipModal(null)}
+              />
+            </div>
+          </div>
+        )
+      })()}
     </div>
+  )
+}
+
+
+function SlipEditor({ initial, editable, onSend, onCancel }: { initial: string; editable: boolean; onSend: (text: string) => Promise<void>; onCancel: () => void }) {
+  const [text, setText] = useState(initial)
+  const [sending, setSending] = useState(false)
+  return (
+    <>
+      <textarea value={text} onChange={e => setText(e.target.value)} readOnly={!editable} rows={14}
+        className={`w-full border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono ${!editable ? 'bg-gray-50 text-gray-500' : ''}`} />
+      <div className="flex gap-2 justify-end">
+        <button onClick={onCancel} className="border border-gray-200 rounded-lg px-4 py-2 text-sm">Batal</button>
+        <button onClick={async () => { setSending(true); await onSend(text); setSending(false) }} disabled={sending}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg px-5 py-2 text-sm font-semibold">
+          {sending ? 'Mengirim…' : 'Kirim'}
+        </button>
+      </div>
+    </>
   )
 }

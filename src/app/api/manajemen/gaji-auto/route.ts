@@ -30,14 +30,18 @@ export async function GET(req: NextRequest) {
   const tahun = parseInt(searchParams.get('tahun') || String(now.getFullYear()))
   const range = { gte: new Date(tahun, bulan - 1, 1), lt: new Date(tahun, bulan, 1) }
 
-  const [karyawans, users, crews, templates] = await Promise.all([
+  const [karyawans, users, crews, templates, shifts] = await Promise.all([
     prisma.karyawanGaji.findMany({ where: { aktif: true }, select: { id: true, nama: true } }),
-    prisma.user.findMany({ where: { isActive: true }, select: { id: true, name: true } }),
+    prisma.user.findMany({ where: { isActive: true }, select: { id: true, name: true, email: true } }),
     prisma.eventCrew.findMany({
       where: { event: { tanggal: range, status: { not: 'BATAL' } } },
       include: { event: { select: { nama: true, tanggal: true, status: true } } },
     }),
     prisma.absenTemplate.findMany({ where: { bonusMode: { not: 'NONE' } } }),
+    prisma.shift.findMany({
+      where: { tanggal: range },
+      select: { userId: true, tanggal: true, jamMulai: true, jamSelesai: true },
+    }),
   ])
 
   // Entri absen DITERIMA bulan ini untuk template ber-bonus
@@ -50,12 +54,12 @@ export async function GET(req: NextRequest) {
     : []
 
   const userByName = new Map(users.map(u => [norm(u.name), u]))
-  const results: Record<string, { userName: string | null; items: Array<{ namaJob: string; nominal: number; auto: boolean }>; total: number }> = {}
+  const results: Record<string, { userName: string | null; email: string | null; items: Array<{ namaJob: string; nominal: number; auto: boolean }>; total: number; shiftJam: number; shiftHari: number }> = {}
   const unlinked: string[] = []
 
   for (const k of karyawans) {
     const user = userByName.get(norm(k.nama))
-    if (!user) { unlinked.push(k.nama); results[k.id] = { userName: null, items: [], total: 0 }; continue }
+    if (!user) { unlinked.push(k.nama); results[k.id] = { userName: null, email: null, items: [], total: 0, shiftJam: 0, shiftHari: 0 }; continue }
 
     const items: Array<{ namaJob: string; nominal: number; auto: boolean }> = []
 
@@ -100,7 +104,25 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    results[k.id] = { userName: user.name, items, total: items.reduce((s, i) => s + i.nominal, 0) }
+    // Jam & hari kerja dari Jadwal Shift bulan ini
+    const myShifts = shifts.filter(s => s.userId === user.id)
+    const hariSet = new Set(myShifts.map(s => new Date(s.tanggal).toDateString()))
+    let totalMenitShift = 0
+    for (const s of myShifts) {
+      const m1 = jamKeMenit(s.jamMulai), m2 = jamKeMenit(s.jamSelesai)
+      if (m1 === null || m2 === null) continue
+      let diff = m2 - m1
+      if (diff < 0) diff += 24 * 60
+      totalMenitShift += diff
+    }
+    results[k.id] = {
+      userName: user.name,
+      email: user.email || null,
+      items,
+      total: items.reduce((s, i) => s + i.nominal, 0),
+      shiftJam: Math.round((totalMenitShift / 60) * 10) / 10,
+      shiftHari: hariSet.size,
+    }
   }
 
   return NextResponse.json({ bulan, tahun, results, unlinked })
