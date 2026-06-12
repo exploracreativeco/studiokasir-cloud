@@ -197,6 +197,33 @@ export default function TransaksiPage() {
 
   const pages = Math.ceil(total / 20)
 
+
+  // 💬 Kirim invoice via WA: pesan ringkas + link halaman publik (+PDF)
+  function kirimInvoiceWA(tx: any) {
+    const type = tx.type === 'OTS' ? 'O' : tx.type === 'BOOKING' ? 'B' : 'P'
+    fetch(`/api/inv-token?type=${type}&id=${tx.id}`)
+      .then(r => r.json())
+      .then(({ token }) => {
+        if (!token) return
+        const link = `${window.location.origin}/inv/${token}`
+        const nama = tx.customer?.name || tx.namaCustomer || 'Kak'
+        const sisa = tx.type === 'BOOKING' ? 0 : (tx.remainingPayment ?? Math.max(0, tx.grandTotal - (tx.dpAmount || 0)))
+        const pesan = [
+          `Halo ${nama}! Terima kasih sudah mempercayakan momenmu ke kami \u{1F4F8}`,
+          ``,
+          `Invoice: *${tx.invoiceNumber}*`,
+          `Total: *${formatRupiah(tx.grandTotal)}*`,
+          ...(sisa > 0 ? [`Sisa pembayaran: *${formatRupiah(sisa)}*`] : [`Status: LUNAS \u2705`]),
+          ``,
+          `Lihat & download invoice:`,
+          link,
+        ].join('\n')
+        const wa = (tx.customer?.whatsapp || tx.whatsapp || '').replace(/^0/, '62').replace(/\D/g, '')
+        window.open(`https://wa.me/${wa ? wa : ''}?text=${encodeURIComponent(pesan)}`, '_blank')
+      })
+  }
+
+
   return (
     <div className="h-full overflow-y-auto">
       <PageHeader title="Riwayat Transaksi" subtitle="Semua transaksi, OTS & booking">
@@ -292,7 +319,7 @@ export default function TransaksiPage() {
                     <td className="px-3 py-3 text-xs text-gray-500">{tx.fotografer?.name || '-'}</td>
                     <td className="px-3 py-3 text-sm font-semibold whitespace-nowrap">{formatRupiah(tx.grandTotal)}</td>
                     <td className="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">{tx.dpAmount > 0 ? formatRupiah(tx.dpAmount) : '-'}</td>
-                    <td className="px-3 py-3 text-sm font-semibold whitespace-nowrap text-emerald-600">{tx.type === 'BOOKING' ? formatRupiah(tx.dpAmount || 0) : formatRupiah(tx.diterimaSaatIni || (tx.grandTotal - (tx.dpAmount || 0)))}</td>
+                    <td className="px-3 py-3 whitespace-nowrap"><span className="text-base font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">{tx.type === 'BOOKING' ? formatRupiah(tx.dpAmount || 0) : formatRupiah(tx.diterimaSaatIni || (tx.grandTotal - (tx.dpAmount || 0)))}</span></td>
                     <td className="px-3 py-3 text-xs text-gray-500">{tx.metodePembayaran?.nama || '-'}</td>
                     <td className="px-3 py-3">{isOfflineMode ? <span className="text-xs text-gray-400">Tidak Aktif</span> : <SyncBadge status={tx.syncStatus} sheet={tx.syncSheet} />}</td>
                     <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">{formatDateShort(tx.transactionDate)}</td>
@@ -301,6 +328,10 @@ export default function TransaksiPage() {
                         <button onClick={() => tx.type === 'OTS' ? setOtsInvoice(tx) : tx.type === 'BOOKING' ? setBookingInvoice(tx) : setInvoiceTx(tx)}
                           title="Invoice" className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-500 hover:text-blue-600 transition-colors">
                           <FileText className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => kirimInvoiceWA(tx)} title="Kirim invoice via WA"
+                          className="p-1.5 border border-green-200 bg-green-50 rounded-lg text-green-600 hover:bg-green-100 transition-colors text-xs">
+                          💬
                         </button>
                         {tx.type !== 'OTS' && tx.type !== 'BOOKING' && (
                           <button onClick={() => openEdit(tx)} title="Edit"

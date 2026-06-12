@@ -35,8 +35,8 @@ const FEATURE_FLAGS: Record<string, string | undefined> = {
   '/manajemen': process.env.NEXT_PUBLIC_FEATURE_MANAJEMEN,
 }
 
-const LICENSE_SKIP = ['/activate', '/api/license', '/api/auth', '/login', '/_next', '/favicon', '/public', '/waiting', '/landing', '/api/landing', '/investor', '/karir', '/api/karir', '/order', '/api/order-publik']
-const PUBLIC_PATHS = ['/login', '/api/auth', '/activate', '/api/license', '/waiting', '/landing', '/api/landing', '/investor', '/karir', '/api/karir', '/order', '/api/order-publik']
+const LICENSE_SKIP = ['/activate', '/api/license', '/api/auth', '/login', '/_next', '/favicon', '/public', '/waiting', '/landing', '/api/landing', '/investor', '/karir', '/api/karir', '/order', '/api/order-publik', '/inv', '/api/inv']
+const PUBLIC_PATHS = ['/login', '/api/auth', '/activate', '/api/license', '/waiting', '/landing', '/api/landing', '/investor', '/karir', '/api/karir', '/order', '/api/order-publik', '/inv', '/api/inv']
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
