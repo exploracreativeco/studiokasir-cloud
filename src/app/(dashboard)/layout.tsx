@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -128,7 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen items-center justify-center bg-[#f5f4f1]">
       <div className="flex flex-col items-center gap-4">
         <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
-          <Camera className="w-7 h-7 text-white" />
+          <img src="/logo-studiohub-white.png" alt="StudioHub" className="w-8 h-8" />
         </div>
         <div className="text-center">
           <div className="text-base font-bold text-gray-800">{studioName}</div>
@@ -155,7 +155,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div className={cn('h-14 flex items-center border-b border-gray-100 flex-shrink-0 relative', collapsed ? 'justify-center px-0' : 'gap-2.5 px-5')}>
           <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Camera className="w-4 h-4 text-white" />
+            <img src="/logo-studiohub-white.png" alt="StudioHub" className="w-5 h-5" />
           </div>
           {!collapsed && <span className="font-bold text-[15px] truncate">{studioName}</span>}
           {/* Collapse toggle button */}

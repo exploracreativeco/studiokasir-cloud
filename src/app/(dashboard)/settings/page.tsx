@@ -74,7 +74,7 @@ export default function SettingsPage() {
     { id: 'backup', label: 'Backup' },
     ...(isSuperAdmin ? [
       { id: 'users', label: '👥 Users' },
-      { id: 'access', label: 'Hak Akses' },
+      { id: 'cabang', label: '🏢 Studio & Cabang' },
       { id: 'developer', label: 'Developer' },
     ] : []),
   ]
@@ -553,34 +553,7 @@ export default function SettingsPage() {
         )}
 
         {/* HAK AKSES */}
-        {activeTab === 'access' && isSuperAdmin && (
-          <div className="space-y-4 max-w-2xl">
-            {['ADMIN', 'CASHIER'].map(role => (
-              <div key={role} className="bg-white border border-gray-200 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold">{role === 'ADMIN' ? ' Admin' : ''}</h3>
-                  <button onClick={() => saveAccess(role, roleAccess[role])}
-                    className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-700">
-                    <Save className="w-3.5 h-3.5" /> Simpan Akses
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {Object.entries(MENU_LABELS).map(([menu, label]) => (
-                    role === 'CASHIER' && ['admin', 'settings'].includes(menu) ? null :
-                    <label key={menu} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50">
-                      <input type="checkbox"
-                        checked={roleAccess[role]?.[menu] ?? false}
-                        onChange={e => setRoleAccess(prev => ({ ...prev, [role]: { ...prev[role], [menu]: e.target.checked } }))}
-                        disabled={menu === 'kasir'}
-                        className="w-4 h-4 rounded accent-blue-600" />
-                      <span className="text-sm text-gray-600">{label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {activeTab === 'cabang' && isSuperAdmin && <BranchManager />}
 
         {/* DEVELOPER */}
         {activeTab === 'developer' && isSuperAdmin && (
@@ -639,6 +612,54 @@ export default function SettingsPage() {
         {/* USERS */}
 
       </div>
+    </div>
+  )
+}
+
+
+// ============ Kelola Studio/Cabang (multi-branch) ============
+function BranchManager() {
+  const [rows, setRows] = useState<any[]>([])
+  const [busy, setBusy] = useState('')
+  const [msg, setMsg] = useState('')
+  const load = () => fetch('/api/branches/manage').then(r => r.json()).then(d => Array.isArray(d) && setRows(d))
+  useEffect(() => { load() }, [])
+  const setF = (id: string, k: string, v: any) => setRows(rs => rs.map(r => r.id === id ? { ...r, [k]: v } : r))
+  async function save(r: any) {
+    setBusy(r.id); setMsg('')
+    const res = await fetch('/api/branches/manage', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: r.id, nama: r.nama, alamat: r.alamat, whatsapp: r.whatsapp, isActive: r.isActive }) })
+    setBusy(''); setMsg(res.ok ? `✓ ${r.nama} tersimpan` : 'Gagal menyimpan')
+  }
+  return (
+    <div className="space-y-4 max-w-3xl">
+      <div>
+        <h2 className="text-sm font-bold text-gray-700">Studio & Cabang</h2>
+        <p className="text-xs text-gray-400 mt-1">Info per studio — dipakai di order publik, subdomain kasir, dan filter data. Slug terkunci karena terikat subdomain.</p>
+      </div>
+      {msg && <p className="text-xs text-emerald-600">{msg}</p>}
+      {rows.map(r => (
+        <div key={r.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-mono font-bold bg-gray-900 text-white px-2 py-1 rounded uppercase">{r.slug}</span>
+            <input value={r.nama || ''} onChange={e => setF(r.id, 'nama', e.target.value)} placeholder="Nama studio"
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold" />
+            <label className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <input type="checkbox" checked={!!r.isActive} onChange={e => setF(r.id, 'isActive', e.target.checked)} className="w-4 h-4 accent-blue-600" /> aktif
+            </label>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-2">
+            <input value={r.alamat || ''} onChange={e => setF(r.id, 'alamat', e.target.value)} placeholder="Alamat"
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+            <input value={r.whatsapp || ''} onChange={e => setF(r.id, 'whatsapp', e.target.value)} placeholder="WhatsApp studio (08xx)"
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <button onClick={() => save(r)} disabled={busy === r.id}
+            className="bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold px-4 py-2 rounded-lg disabled:opacity-50">
+            {busy === r.id ? 'Menyimpan…' : 'Simpan'}
+          </button>
+        </div>
+      ))}
     </div>
   )
 }
