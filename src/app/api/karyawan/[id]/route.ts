@@ -39,7 +39,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { password, role, ...rest } = parsed.data
 
   // Proteksi: jangan sampai superadmin terakhir kehilangan role/aktif
-  if (target.role === 'SUPERADMIN' && (role && role !== 'SUPERADMIN' || rest.isActive === false)) {
+  if (target.role === 'SUPERADMIN' && ((role && role !== 'SUPERADMIN') || rest.isActive === false)) {
     const superCount = await prisma.user.count({ where: { role: 'SUPERADMIN', isActive: true } })
     if (superCount <= 1) {
       return NextResponse.json({ error: 'Tidak bisa — ini SUPERADMIN aktif terakhir' }, { status: 400 })
