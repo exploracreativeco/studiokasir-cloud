@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { monthRange } from '@/lib/dates'
 import { z } from 'zod'
+import { logActivity } from '@/lib/activity-log'
 
 const crewSchema = z.object({
   userId: z.string().min(1),
@@ -64,8 +65,15 @@ export async function POST(req: NextRequest) {
   }
   const { crews, tanggal, ...rest } = parsed.data
   const [y, m, d] = tanggal.split('-').map(Number)
+  const role = (session.user as any).role
+  const myId = (session.user as any).id
+  const isAdmin = role === 'SUPERADMIN' || role === 'ADMIN'
 
-  // Branch booth (kalau ada) — event default milik booth
+  // Crew biasa: honor dipaksa 0 & hanya boleh memasukkan dirinya sendiri
+  const safeCrews = isAdmin
+    ? crews.map(c => ({ userId: c.userId, peran: c.peran || null, honor: c.honor }))
+    : crews.filter(c => c.userId === myId).map(c => ({ userId: c.userId, peran: c.peran || null, honor: 0 }))
+
   const booth = await prisma.branch.findUnique({ where: { slug: 'booth' } })
 
   const event = await prisma.event.create({
@@ -73,9 +81,10 @@ export async function POST(req: NextRequest) {
       ...rest,
       branchId: booth?.id || null,
       tanggal: new Date(y, m - 1, d),
-      crews: { create: crews.map(c => ({ userId: c.userId, peran: c.peran || null, honor: c.honor })) },
+      crews: { create: safeCrews },
     },
     include: EVENT_INCLUDE,
   })
+  await logActivity({ userId: myId, userName: (session.user as any).name, action: 'CREATE', entity: 'Event', entityId: event.id, detail: `Event baru: ${event.nama} (${event.jenis})` })
   return NextResponse.json(event, { status: 201 })
 }

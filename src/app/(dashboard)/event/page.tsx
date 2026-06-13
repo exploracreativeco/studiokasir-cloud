@@ -6,6 +6,7 @@
 // Crew bertugas + honor per crew · status event & pembayaran
 // ============================================================
 import { useCallback, useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { PartyPopper, ChevronLeft, ChevronRight, Loader2, Trash2, X, Plus, MapPin } from 'lucide-react'
 
 interface UserOpt { id: string; name: string; role: string }
@@ -36,6 +37,10 @@ const emptyForm = {
 }
 
 export default function EventPage() {
+  const { data: session } = useSession()
+  const myId = (session?.user as any)?.id as string | undefined
+  const myRole = (session?.user as any)?.role as string | undefined
+  const isAdmin = myRole === 'SUPERADMIN' || myRole === 'ADMIN'
   const now = new Date()
   const [tahun, setTahun] = useState(now.getFullYear())
   const [bulan, setBulan] = useState(now.getMonth() + 1)
@@ -215,26 +220,47 @@ export default function EventPage() {
                 {['BOOKED', 'PERSIAPAN', 'SELESAI', 'BATAL'].map(s => <option key={s} value={s}>{s}</option>)}
               </select>
               <input value={form.peralatan} onChange={e => setForm(f => ({ ...f, peralatan: e.target.value }))} placeholder="Peralatan (mis. booth A, ringlight ×2)" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm sm:col-span-2" />
-              <input value={form.catatan} onChange={e => setForm(f => ({ ...f, catatan: e.target.value }))} placeholder="Catatan" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm sm:col-span-2" />
+              <textarea value={form.catatan} onChange={e => setForm(f => ({ ...f, catatan: e.target.value }))} placeholder="Catatan / format booking (boleh panjang)" rows={4} className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm sm:col-span-2 resize-y leading-relaxed whitespace-pre-wrap" />
             </div>
 
-            {/* CREW */}
+            {/* CREW — admin bebas; crew biasa hanya bisa kelola dirinya sendiri */}
             <div className="space-y-2">
               <p className="text-xs font-bold text-gray-600">Crew Bertugas</p>
-              {form.crews.map((c, i) => (
-                <div key={i} className="flex flex-wrap gap-2 items-center bg-gray-50 rounded-lg p-2">
-                  <select value={c.userId} onChange={e => setForm(f => ({ ...f, crews: f.crews.map((x, j) => j === i ? { ...x, userId: e.target.value } : x) }))} className="flex-1 min-w-[140px] border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white">
-                    <option value="">— pilih crew —</option>
-                    {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                  </select>
-                  <input value={c.peran} onChange={e => setForm(f => ({ ...f, crews: f.crews.map((x, j) => j === i ? { ...x, peran: e.target.value } : x) }))} placeholder="Peran" className="w-28 border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
-                  <input type="number" value={c.honor} onChange={e => setForm(f => ({ ...f, crews: f.crews.map((x, j) => j === i ? { ...x, honor: +e.target.value } : x) }))} placeholder="Honor" className="w-28 border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
-                  <button onClick={() => setForm(f => ({ ...f, crews: f.crews.filter((_, j) => j !== i) }))} className="text-red-400"><Trash2 className="w-4 h-4" /></button>
-                </div>
-              ))}
-              <button onClick={() => setForm(f => ({ ...f, crews: [...f.crews, { userId: '', peran: '', honor: 0 }] }))} className="flex items-center gap-1 text-xs font-bold text-blue-600">
-                <Plus className="w-3.5 h-3.5" /> Tambah crew
-              </button>
+              {form.crews.map((c, i) => {
+                const isMine = c.userId === myId
+                const canEditRow = isAdmin || isMine
+                return (
+                  <div key={i} className="flex flex-wrap gap-2 items-center bg-gray-50 rounded-lg p-2">
+                    {isAdmin ? (
+                      <select value={c.userId} onChange={e => setForm(f => ({ ...f, crews: f.crews.map((x, j) => j === i ? { ...x, userId: e.target.value } : x) }))} className="flex-1 min-w-[140px] border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white">
+                        <option value="">— pilih crew —</option>
+                        {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                      </select>
+                    ) : (
+                      <span className="flex-1 min-w-[140px] px-2 py-1.5 text-xs font-semibold">{c.user?.name || users.find(u => u.id === c.userId)?.name || (isMine ? 'Saya' : '—')}</span>
+                    )}
+                    <input value={c.peran} onChange={e => setForm(f => ({ ...f, crews: f.crews.map((x, j) => j === i ? { ...x, peran: e.target.value } : x) }))} placeholder="Peran" disabled={!canEditRow} className="w-28 border border-gray-200 rounded-lg px-2 py-1.5 text-xs disabled:bg-gray-100 disabled:text-gray-400" />
+                    {/* Honor hanya admin yang boleh lihat/ubah */}
+                    {isAdmin
+                      ? <input type="number" value={c.honor} onChange={e => setForm(f => ({ ...f, crews: f.crews.map((x, j) => j === i ? { ...x, honor: +e.target.value } : x) }))} placeholder="Honor" className="w-28 border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
+                      : <span className="w-28 px-2 py-1.5 text-xs text-gray-300">—</span>}
+                    {canEditRow
+                      ? <button onClick={() => setForm(f => ({ ...f, crews: f.crews.filter((_, j) => j !== i) }))} className="text-red-400"><Trash2 className="w-4 h-4" /></button>
+                      : <span className="w-4" />}
+                  </div>
+                )
+              })}
+              {isAdmin ? (
+                <button onClick={() => setForm(f => ({ ...f, crews: [...f.crews, { userId: '', peran: '', honor: 0 }] }))} className="flex items-center gap-1 text-xs font-bold text-blue-600">
+                  <Plus className="w-3.5 h-3.5" /> Tambah crew
+                </button>
+              ) : (
+                !form.crews.some(c => c.userId === myId) && myId && (
+                  <button onClick={() => setForm(f => ({ ...f, crews: [...f.crews, { userId: myId, peran: '', honor: 0, user: { name: 'Saya' } }] }))} className="flex items-center gap-1 text-xs font-bold text-blue-600">
+                    <Plus className="w-3.5 h-3.5" /> Tambahkan saya
+                  </button>
+                )
+              )}
             </div>
 
             <div className="flex gap-2 pt-1">
