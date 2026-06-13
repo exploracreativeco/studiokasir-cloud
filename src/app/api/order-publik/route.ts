@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { rateLimit, clientIp } from '@/lib/rate-limit'
 
 const submitSchema = z.object({
   branchId: z.string().min(1),
@@ -47,6 +48,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Anti-spam: maks 8 order/menit/IP
+  if (!rateLimit(`order:${clientIp(req)}`, 8, 60_000))
+    return NextResponse.json({ error: 'Terlalu banyak permintaan, coba lagi sebentar' }, { status: 429 })
   const parsed = submitSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: 'Data tidak valid' }, { status: 400 })
   const d = parsed.data

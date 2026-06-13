@@ -1,6 +1,7 @@
 ﻿import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import Google from 'next-auth/providers/google'
+import { rateLimit } from '@/lib/rate-limit'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
@@ -68,6 +69,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials) {
+        // Brute-force guard: 8 percobaan / 5 menit per email
+        const _em = String((credentials as any)?.email || 'unknown').toLowerCase()
+        if (!rateLimit(`login:${_em}`, 8, 5 * 60_000)) return null
         const parsed = loginSchema.safeParse(credentials)
         if (!parsed.success) return null
         const user = await prisma.user.findUnique({ where: { email: parsed.data.email } })

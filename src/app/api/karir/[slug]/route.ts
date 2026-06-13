@@ -1,6 +1,7 @@
 // api/karir/[slug] — detail lowongan (GET) & submit lamaran (POST) — PUBLIK
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { rateLimit, clientIp } from '@/lib/rate-limit'
 import { z } from 'zod'
 
 const submitSchema = z.object({
@@ -18,6 +19,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  if (!rateLimit(`karir:${clientIp(req)}`, 5, 60_000))
+    return NextResponse.json({ error: 'Terlalu banyak lamaran, coba lagi sebentar' }, { status: 429 })
   const { slug } = await params
   const l = await prisma.lowongan.findUnique({ where: { slug } })
   if (!l || !l.isActive) return NextResponse.json({ error: 'Lowongan tidak ditemukan' }, { status: 404 })
