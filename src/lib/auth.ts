@@ -29,6 +29,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
   callbacks: {
+    // Google sign-in: pastikan user ada di DB (buat sebagai PENDING kalau baru).
+    async signIn({ user, account }) {
+      if (account?.provider === 'google' && user.email) {
+        let dbUser = await prisma.user.findUnique({ where: { email: user.email } })
+        if (!dbUser) {
+          dbUser = await prisma.user.create({
+            data: {
+              name: user.name || user.email,
+              email: user.email,
+              password: '',
+              role: 'CASHIER',
+              isActive: false,
+              googleId: (user as any).id || null,
+            },
+          })
+        } else if (!dbUser.googleId && (user as any).id) {
+          // Tautkan googleId kalau user sudah ada (login manual sebelumnya)
+          await prisma.user.update({ where: { id: dbUser.id }, data: { googleId: (user as any).id } }).catch(() => {})
+        }
+        // user nonaktif tetap boleh "masuk" alur → diarahkan ke /waiting oleh middleware
+      }
+      return true
+    },
     // Selalu kembali ke domain sendiri (cegah redirect ke URL lama)
     async redirect({ url, baseUrl }) {
       if (url.startsWith('/')) return `${baseUrl}${url}`
@@ -37,12 +60,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as any).role
-        token.id = user.id
-        token.isActive = (user as any).isActive !== false
+        // Google user dari profile() tak punya role → ambil dari DB by email.
+        let dbUser: any = null
+        if ((user as any).role === undefined && user.email) {
+          dbUser = await prisma.user.findUnique({ where: { email: user.email } })
+        }
+        token.role = (user as any).role ?? dbUser?.role ?? 'CASHIER'
+        token.id = (user as any).id ?? dbUser?.id
+        token.isActive = ((user as any).isActive ?? dbUser?.isActive) !== false
 
         // Ambil akses dari database saat login
-        const role = (user as any).role
+        const role = token.role as string
         if (role !== 'SUPERADMIN') {
           const accessRows = await prisma.roleAccess.findMany({ where: { role } })
           if (accessRows.length > 0) {
@@ -84,27 +112,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      async profile(profile) {
-        // Cek apakah user sudah ada di DB
-        let user = await prisma.user.findUnique({ where: { email: profile.email } })
-        if (!user) {
-          // Buat user baru dengan isActive: false (PENDING)
-          user = await prisma.user.create({
-            data: {
-              name: profile.name || profile.email,
-              email: profile.email,
-              password: '', // tidak pakai password
-              role: 'CASHIER',
-              isActive: false,
-            },
-          })
-        }
+      // profile() murni: JANGAN akses DB di sini (penyebab OAuthProfileParseError).
+      // Cukup map data Google → pembuatan user dilakukan di signIn callback.
+      profile(profile) {
         return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          isActive: user.isActive,
+          id: profile.sub,
+          email: profile.email,
+          name: profile.name || profile.email,
+          image: profile.picture,
         }
       },
     }),
