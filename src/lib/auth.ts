@@ -117,6 +117,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      issuer: 'https://accounts.google.com',
+      // Di balik proxy (Railway), pengecekan issuer/PKCE kadang gagal.
+      // 'state' check tetap aktif (aman), PKCE dibiarkan default Google.
+      checks: ['pkce', 'state'],
+      authorization: {
+        params: {
+          prompt: 'select_account',
+          access_type: 'offline',
+          response_type: 'code',
+        },
+      },
       // profile() murni: JANGAN akses DB di sini (penyebab OAuthProfileParseError).
       // Cukup map data Google → pembuatan user dilakukan di signIn callback.
       profile(profile) {
