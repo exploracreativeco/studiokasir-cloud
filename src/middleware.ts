@@ -27,6 +27,7 @@ const MENU_PATHS: Record<string, string> = {
   '/event': 'event',
   '/oprec': 'oprec',
   '/log': 'log',
+  '/kerjasama': 'kerjasama',
 }
 
 // Feature flags — dikontrol via .env saat build
@@ -36,8 +37,8 @@ const FEATURE_FLAGS: Record<string, string | undefined> = {
   '/manajemen': process.env.NEXT_PUBLIC_FEATURE_MANAJEMEN,
 }
 
-const LICENSE_SKIP = ['/activate', '/api/license', '/api/auth', '/login', '/_next', '/favicon', '/public', '/waiting', '/landing', '/api/landing', '/investor', '/karir', '/api/karir', '/order', '/api/order-publik', '/inv', '/api/inv']
-const PUBLIC_PATHS = ['/login', '/api/auth', '/activate', '/api/license', '/waiting', '/landing', '/api/landing', '/investor', '/karir', '/api/karir', '/order', '/api/order-publik', '/inv', '/api/inv']
+const LICENSE_SKIP = ['/activate', '/api/license', '/api/auth', '/login', '/_next', '/favicon', '/public', '/waiting', '/landing', '/api/landing', '/investor', '/karir', '/api/karir', '/order', '/api/order-publik', '/inv', '/api/inv', '/api/kerjasama-form']
+const PUBLIC_PATHS = ['/login', '/api/auth', '/activate', '/api/license', '/waiting', '/landing', '/api/landing', '/investor', '/karir', '/api/karir', '/order', '/api/order-publik', '/inv', '/api/inv', '/api/kerjasama-form']
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -65,7 +66,7 @@ export async function middleware(req: NextRequest) {
   // Step 1: License check — skip di cloud
   const isCloud = process.env.NEXT_PUBLIC_FEATURE_CLOUD === 'true'
   if (!isCloud) {
-    const skipLicense = LICENSE_SKIP.some(p => pathname.startsWith(p))
+    const skipLicense = /^\/kerjasama\/[^/]+/.test(pathname) || LICENSE_SKIP.some(p => pathname.startsWith(p))
     if (!skipLicense) {
       const licenseCookie = req.cookies.get('sk_license')
       if (licenseCookie?.value !== 'active') {
@@ -75,7 +76,10 @@ export async function middleware(req: NextRequest) {
   }
 
   // Step 2: Public paths
-  const isPublicPath = PUBLIC_PATHS.some(p => pathname.startsWith(p)) || pathname === '/'
+  // /kerjasama/<slug> = form publik (boleh tanpa login),
+  // tapi /kerjasama (tanpa slug) = halaman admin (butuh login superadmin).
+  const isKerjasamaPublik = /^\/kerjasama\/[^/]+/.test(pathname)
+  const isPublicPath = isKerjasamaPublik || PUBLIC_PATHS.some(p => pathname.startsWith(p)) || pathname === '/'
   if (isPublicPath) return NextResponse.next(withBranch)
 
   // Step 2.5: Feature flag check — block route kalau fitur disabled
@@ -107,15 +111,6 @@ export async function middleware(req: NextRequest) {
   // User Google belum diapprove → redirect ke waiting
   if (token.isActive === false) {
     return NextResponse.redirect(new URL('/waiting', req.url))
-  }
-
-  // WAJIB buat password: user tanpa password (login Google) dipaksa ke /akun
-  // sampai membuat password. /akun & /api/account & /api/auth tetap boleh.
-  if (token.hasPassword === false
-      && !pathname.startsWith('/akun')
-      && !pathname.startsWith('/api/account')
-      && !pathname.startsWith('/api/auth')) {
-    return NextResponse.redirect(new URL('/akun?setup=1', req.url))
   }
 
   // WAJIB buat password: user tanpa password (login Google) dipaksa ke /akun

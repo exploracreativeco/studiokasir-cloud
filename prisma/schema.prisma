@@ -900,3 +900,33 @@ model ActivityLog {
   @@index([createdAt])
   @@index([action])
 }
+model KerjasamaProgram {
+  id        String                @id @default(cuid())
+  slug      String                @unique
+  judul     String
+  kategori  String
+  deskripsi String?               @db.Text
+  fotoUrl   String?
+  fields    String                @db.Text
+  isActive  Boolean               @default(true)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  pengajuan KerjasamaPengajuan[]
+}
+
+model KerjasamaPengajuan {
+  id         String           @id @default(cuid())
+  programId  String
+  nama       String
+  perusahaan String?
+  whatsapp   String
+  email      String?
+  jawaban    String           @db.Text
+  status     String           @default("BARU")
+  catatan    String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  program    KerjasamaProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@index([programId, status])
+}
