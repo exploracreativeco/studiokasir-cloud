@@ -122,7 +122,10 @@ export async function middleware(req: NextRequest) {
   const canAccess = accessFromToken ? (accessFromToken[menuKey] ?? false) : false
 
   if (!canAccess) {
-    return NextResponse.redirect(new URL('/kasir', req.url))
+    // Fallback universal = /beranda (semua role boleh). Guard anti-loop:
+    // kalau /beranda sendiri yang ditolak, biarkan lewat agar tidak infinite redirect.
+    if (pathname.startsWith('/beranda')) return NextResponse.next(withBranch)
+    return NextResponse.redirect(new URL('/beranda', req.url))
   }
 
   return NextResponse.next(withBranch)
