@@ -6,7 +6,8 @@ import { generateInvoiceNumber } from '@/lib/utils'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session || (session.user as any).role !== 'SUPERADMIN')
+    return NextResponse.json({ error: 'Hanya Superadmin yang dapat mengakses fitur ini' }, { status: 403 })
 
   try {
     const formData = await req.formData()

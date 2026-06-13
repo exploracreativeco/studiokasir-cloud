@@ -27,7 +27,8 @@ function styleRow(row: ExcelJS.Row, even: boolean) {
 
 export async function GET(req: NextRequest) {
   const session = await auth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session || (session.user as any).role !== 'SUPERADMIN')
+    return NextResponse.json({ error: 'Hanya Superadmin yang dapat mengakses fitur ini' }, { status: 403 })
 
   const { searchParams } = new URL(req.url)
   const from = searchParams.get('from') || ''
