@@ -69,26 +69,27 @@ export function LandingView({ content }: { content: LandingContent }) {
   return (
     <main>
       {/* ===== NAV ===== */}
-      <nav className="flex items-center justify-between px-6 md:px-12 py-5">
+      <nav className="flex items-center justify-between gap-3 px-5 md:px-12 py-4 md:py-5">
         <div className="flex items-center gap-2.5">
           <Camera className="w-5 h-5" strokeWidth={2.2} />
-          <span className="lp-display font-bold text-[17px] tracking-tight">EXPLORA CREATIVE</span>
+          <span className="lp-display font-bold text-[15px] md:text-[17px] tracking-tight">EXPLORA CREATIVE</span>
         </div>
-        <a href="https://app.exploracreative.id/login" className="lp-mono hover:text-[var(--lp-ink)] transition-colors">
-          Login Karyawan
+        <a href="https://app.exploracreative.id/login"
+          className="lp-mono border border-[var(--lp-ink)] px-3 py-1.5 rounded hover:bg-[var(--lp-ink)] hover:text-white transition-colors whitespace-nowrap">
+          Login Team
         </a>
       </nav>
 
       {/* ===== HERO — ringkas ===== */}
       <section className="px-6 md:px-12 pt-8 md:pt-12 pb-14 md:pb-20">
-        <div className="lp-frame max-w-6xl mx-auto px-6 md:px-14 py-12 md:py-16">
+        <div className="lp-frame max-w-6xl mx-auto px-5 sm:px-8 md:px-14 py-10 sm:py-12 md:py-16">
           <span className="lp-corner" />
-          <div className="flex items-center gap-3 mb-6 lp-mono">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-6 lp-mono text-[11px] md:text-xs">
             <span className="lp-rec-dot" />
             <span>{hero.eyebrow}</span>
             <span className="hidden md:inline">· f/1.8 · ISO 400 · 35mm</span>
           </div>
-          <h1 className="lp-display font-bold leading-[0.95] tracking-tight text-[12vw] md:text-[6.5rem]">
+          <h1 className="lp-display font-bold leading-[1.02] md:leading-[0.95] tracking-tight text-[2.5rem] sm:text-6xl md:text-[6.5rem] break-words">
             {hero.judul}
           </h1>
           <p className="lp-display mt-5 text-lg md:text-2xl font-medium text-[var(--lp-silver)]">{hero.tagline}</p>
