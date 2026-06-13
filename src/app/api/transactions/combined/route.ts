@@ -65,6 +65,20 @@ export async function GET(req: NextRequest) {
 
   const typeFilter = searchParams.get('type') || ''
 
+  // ── OPTIMASI PERFORMA ──
+  // Untuk menampilkan halaman ke-N (sort desc gabungan), cukup ambil
+  // (page*limit) teratas dari TIAP sumber — bukan SEMUA baris.
+  // Worst case: semua data halaman berasal dari 1 sumber → page*limit cukup.
+  // + buffer kecil untuk aman. Hindari tarik ribuan row tiap request.
+  const fetchCap = page * limit + limit  // buffer 1 halaman
+
+  // Hitung total per sumber (cepat, hanya COUNT — pakai index) untuk pagination akurat.
+  const [txCount, otsCount, bookCount] = await Promise.all([
+    typeFilter && typeFilter !== 'PAKET' ? Promise.resolve(0) : prisma.transaction.count({ where: txWhere }),
+    typeFilter && typeFilter !== 'OTS' ? Promise.resolve(0) : (status === 'DP' || status === 'LUNAS' ? Promise.resolve(0) : prisma.otsOrder.count({ where: otsWhere })),
+    typeFilter && typeFilter !== 'BOOKING' ? Promise.resolve(0) : prisma.booking.count({ where: bookingWhere }),
+  ])
+
   const [transactions, otsOrders, bookings] = await Promise.all([
     typeFilter && typeFilter !== 'PAKET' ? Promise.resolve([]) :
     prisma.transaction.findMany({
@@ -79,6 +93,7 @@ export async function GET(req: NextRequest) {
         biayaOps: true,
       },
       orderBy: { createdAt: 'desc' },
+      take: fetchCap,
     }),
     typeFilter && typeFilter !== 'OTS' ? Promise.resolve([]) :
     (status === 'DP' || status === 'LUNAS' ? Promise.resolve([]) :
@@ -92,6 +107,7 @@ export async function GET(req: NextRequest) {
         customer: true,
       },
       orderBy: { createdAt: 'desc' },
+      take: fetchCap,
     })),
     typeFilter && typeFilter !== 'BOOKING' ? Promise.resolve([]) :
     prisma.booking.findMany({
@@ -100,6 +116,7 @@ export async function GET(req: NextRequest) {
         customer: true,
       },
       orderBy: { createdAt: 'desc' },
+      take: fetchCap,
     }),
   ])
 
@@ -176,7 +193,8 @@ export async function GET(req: NextRequest) {
       ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-  const total = combined.length
+  // Total akurat dari COUNT semua sumber (bukan dari data yang ter-cap)
+  const total = txCount + otsCount + bookCount
   const paginated = combined.slice((page - 1) * limit, page * limit)
 
   return NextResponse.json({ transactions: paginated, total, page, limit, pages: Math.ceil(total / limit) })
