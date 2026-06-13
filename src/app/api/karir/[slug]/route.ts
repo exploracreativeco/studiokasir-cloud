@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { rateLimit, clientIp } from '@/lib/rate-limit'
+import { notifySuperadmin } from '@/lib/notify'
 import { z } from 'zod'
 
 const submitSchema = z.object({
@@ -79,5 +80,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       catatan: autoCatatan,
     },
   })
+
+  // #6 notif email superadmin — hanya untuk pelamar yang LOLOS auto-filter
+  // (yang auto-DITOLAK tidak dikirim, agar inbox tidak penuh)
+  if (autoStatus !== 'DITOLAK') {
+    notifySuperadmin({
+      subjek: `📝 Pelamar Baru — ${l.judul} (${l.posisi})`,
+      isi: `Ada pelamar baru di Open Recruitment:\n\nLowongan: ${l.judul} — ${l.posisi}\nNama: ${d.nama}\nWhatsApp: ${d.whatsapp}\nEmail: ${d.email || '-'}\n\nCek di dashboard StudioHub → Oprec.`,
+    }).catch(() => {})
+  }
+
   return NextResponse.json({ ok: true }, { status: 201 })
 }
