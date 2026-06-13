@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
-import { Camera, LayoutDashboard, ShoppingCart, Receipt, DollarSign, BarChart2, Table2, Settings, Settings2, LogOut, Bell, ChevronDown, Menu, Users, ClipboardList, ChevronLeft, ChevronRight, BookOpen, Info, Briefcase, FileOutput, Shield, UsersRound, CalendarDays, ClipboardCheck, PartyPopper, Link2, Megaphone, Globe, Home } from 'lucide-react'
+import { Camera, LayoutDashboard, ShoppingCart, Receipt, DollarSign, BarChart2, Table2, Settings, Settings2, LogOut, Bell, ChevronDown, Menu, Users, ClipboardList, ChevronLeft, ChevronRight, BookOpen, Info, Briefcase, FileOutput, Shield, UsersRound, User, CalendarDays, ClipboardCheck, PartyPopper, Link2, Megaphone, Globe, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const ALL_NAV_ITEMS = [
@@ -70,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false)
   const [access, setAccess] = useState<Record<string, boolean>>({})
   const [pageLoading, setPageLoading] = useState(true)
-  const [studioName, setStudioName] = useState('StudioHub')
+  const [studioName, setStudioName] = useState('StudioKasir')
   const [appMode, setAppMode] = useState<string>('manajemen')
   const [branchSlug, setBranchSlug] = useState<string | null>(null)
   const [canSwitch, setCanSwitch] = useState(false)
@@ -128,7 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen items-center justify-center bg-[#f5f4f1]">
       <div className="flex flex-col items-center gap-4">
         <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
-          <img src="/logo-studiohub-white.png" alt="StudioHub" className="w-8 h-8" />
+          <Camera className="w-7 h-7 text-white" />
         </div>
         <div className="text-center">
           <div className="text-base font-bold text-gray-800">{studioName}</div>
@@ -155,7 +155,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div className={cn('h-14 flex items-center border-b border-gray-100 flex-shrink-0 relative', collapsed ? 'justify-center px-0' : 'gap-2.5 px-5')}>
           <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <img src="/logo-studiohub-white.png" alt="StudioHub" className="w-5 h-5" />
+            <Camera className="w-4 h-4 text-white" />
           </div>
           {!collapsed && <span className="font-bold text-[15px] truncate">{studioName}</span>}
           {/* Collapse toggle button */}
@@ -198,8 +198,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </nav>
 
-        {/* Tentang + Logout */}
+        {/* Akun + Tentang + Logout */}
         <div className="border-t border-gray-100 p-2 space-y-0.5">
+          <Link href="/akun" title={collapsed ? 'Akun Saya' : undefined}
+            className={cn('flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-600 w-full transition-all', collapsed ? 'justify-center' : '')}>
+            <User className="w-4 h-4" />
+            {!collapsed && 'Akun Saya'}
+          </Link>
           <Link href="/about" title={collapsed ? 'Tentang' : undefined}
             className={cn('relative flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-600 w-full transition-all', collapsed ? 'justify-center' : '')}>
             {hasUpdate && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full z-10 border border-white" />}

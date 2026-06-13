@@ -49,6 +49,8 @@ model User {
   isActive     Boolean       @default(true)
   googleId     String?       @unique
   avatarUrl    String?
+  nickname     String?
+  whatsapp     String?
   branchId     String? // null = akses semua branch
   branch       Branch?       @relation(fields: [branchId], references: [id])
   createdAt    DateTime      @default(now())
