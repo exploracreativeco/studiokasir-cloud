@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Megaphone, Plus, Trash2, Copy, Check, Loader2, X, UserPlus, Upload, Search, Pencil , ChevronUp, ChevronDown } from 'lucide-react'
 
-interface Field { key: string; label: string; type: string; required: boolean; options?: string[] }
+interface Field { key: string; label: string; type: string; required: boolean; options?: string[]; optionsText?: string }
 interface Rule { fieldKey: string; operator: string; value: string }
 interface Lowongan { id: string; slug: string; judul: string; posisi: string; deskripsi: string | null; fotoUrl?: string | null; fields: Field[]; rules: Rule[]; isActive: boolean; pelamarCount: number }
 interface Pelamar { id: string; nama: string; whatsapp: string; email: string | null; jawaban: Record<string, any>; status: string; catatan: string | null; createdAt: string; lowonganId: string; lowongan: { judul: string; posisi: string } }
@@ -197,7 +197,7 @@ function LowonganManager({ lowongan, reload, copied, setCopied, linkOf }: { lowo
     setForm({ judul: l.judul, posisi: l.posisi, deskripsi: l.deskripsi || '', fotoUrl: l.fotoUrl || '', fields: l.fields, rules: l.rules || [] })
     setShowForm(true); setErr('')
   }
-  function setF(i: number, patch: Partial<Field>) { setForm(f => ({ ...f, fields: f.fields.map((x, j) => (j === i ? { ...x, ...patch }
+  function setF(i: number, patch: Partial<Field>) { setForm(f => ({ ...f, fields: f.fields.map((x, j) => (j === i ? { ...x, ...patch } : x)) })) }
   function moveField(i: number, dir: -1 | 1) {
     setForm(f => {
       const arr = [...f.fields]; const j = i + dir
@@ -205,7 +205,7 @@ function LowonganManager({ lowongan, reload, copied, setCopied, linkOf }: { lowo
       ;[arr[i], arr[j]] = [arr[j], arr[i]]
       return { ...f, fields: arr }
     })
-  } : x)) })) }
+  }
   function setR(i: number, patch: Partial<Rule>) { setForm(f => ({ ...f, rules: f.rules.map((x, j) => (j === i ? { ...x, ...patch } : x)) })) }
 
   async function upload(file: File) {
