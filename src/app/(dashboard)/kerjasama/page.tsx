@@ -5,7 +5,7 @@
 // Mirror Oprec: program (form dinamis) + pengajuan (pipeline status)
 // ============================================================
 import { useCallback, useEffect, useState } from 'react'
-import { Handshake, Plus, Trash2, Copy, Check, Loader2, X, Search, Pencil } from 'lucide-react'
+import { Handshake, Plus, Trash2, Copy, Check, Loader2, X, Search, Pencil, ChevronUp, ChevronDown } from 'lucide-react'
 
 const STATUSES = ['BARU', 'REVIEW', 'NEGOSIASI', 'DITERIMA', 'DITOLAK']
 const STATUS_WARNA: Record<string, string> = {
@@ -17,7 +17,7 @@ const FIELD_TYPES = [
   { v: 'link', l: 'Link/URL' }, { v: 'pilihan', l: 'Pilihan (dropdown)' }, { v: 'checklist', l: 'Checklist' },
 ]
 
-interface FieldDef { key: string; label: string; type: string; required: boolean; options?: string[] }
+interface FieldDef { key: string; label: string; type: string; required: boolean; options?: string[]; optionsText?: string }
 interface Program { id: string; slug: string; judul: string; kategori: string; deskripsi: string | null; fotoUrl: string | null; fields: FieldDef[]; isActive: boolean; pengajuanCount: number }
 interface Pengajuan { id: string; nama: string; perusahaan: string | null; whatsapp: string; email: string | null; jawaban: Record<string, any>; status: string; catatan: string | null; createdAt: string; program: { judul: string; kategori: string } }
 
@@ -64,12 +64,16 @@ export default function KerjasamaPage() {
   })
 
   function openCreate() { setEditId(null); setPf({ judul: '', kategori: '', deskripsi: '', fields: [] }); setShowForm(true); setError('') }
-  function openEdit(p: Program) { setEditId(p.id); setPf({ judul: p.judul, kategori: p.kategori, deskripsi: p.deskripsi || '', fields: p.fields }); setShowForm(true); setError('') }
+  function openEdit(p: Program) { setEditId(p.id); setPf({ judul: p.judul, kategori: p.kategori, deskripsi: p.deskripsi || '', fields: p.fields.map(f => ({ ...f, optionsText: (f.options || []).join(', ') })) }); setShowForm(true); setError('') }
 
   async function saveProgram() {
     setError('')
     if (pf.judul.length < 3 || pf.kategori.length < 2) { setError('Judul & kategori wajib'); return }
-    const fields = pf.fields.map((f, i) => ({ ...f, key: f.key || `f${i}_${Date.now().toString(36)}` }))
+    const fields = pf.fields.map((f, i) => {
+      const opts = (f.optionsText !== undefined ? f.optionsText.split(',').map(s => s.trim()).filter(Boolean) : f.options) || []
+      const { optionsText, ...rest } = f
+      return { ...rest, key: f.key || `f${i}_${Date.now().toString(36)}`, options: opts }
+    })
     const res = await fetch(editId ? `/api/kerjasama/program/${editId}` : '/api/kerjasama/program', {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...pf, fields }),
@@ -100,6 +104,14 @@ export default function KerjasamaPage() {
   }
 
   function addField() { setPf(f => ({ ...f, fields: [...f.fields, { key: '', label: '', type: 'teks', required: false }] })) }
+  function moveField(i: number, dir: -1 | 1) {
+    setPf(f => {
+      const arr = [...f.fields]; const j = i + dir
+      if (j < 0 || j >= arr.length) return f
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+      return { ...f, fields: arr }
+    })
+  }
 
   if (loading) return <div className="flex items-center justify-center min-h-[50vh] text-gray-400"><Loader2 className="w-6 h-6 animate-spin" /></div>
 
@@ -222,10 +234,14 @@ export default function KerjasamaPage() {
                       {FIELD_TYPES.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
                     </select>
                     <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={fld.required} onChange={e => setPf(f => ({ ...f, fields: f.fields.map((x, j) => j === i ? { ...x, required: e.target.checked } : x) }))} className="w-3.5 h-3.5 accent-blue-600" /> wajib</label>
+                    <div className="flex flex-col">
+                      <button onClick={() => moveField(i, -1)} disabled={i === 0} className="text-gray-400 disabled:opacity-20 hover:text-gray-700"><ChevronUp className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => moveField(i, 1)} disabled={i === pf.fields.length - 1} className="text-gray-400 disabled:opacity-20 hover:text-gray-700"><ChevronDown className="w-3.5 h-3.5" /></button>
+                    </div>
                     <button onClick={() => setPf(f => ({ ...f, fields: f.fields.filter((_, j) => j !== i) }))} className="text-red-400"><Trash2 className="w-4 h-4" /></button>
                   </div>
                   {(fld.type === 'pilihan' || fld.type === 'checklist') && (
-                    <input value={(fld.options || []).join(', ')} onChange={e => setPf(f => ({ ...f, fields: f.fields.map((x, j) => j === i ? { ...x, options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } : x) }))} placeholder="Opsi pisah koma: A, B, C" className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
+                    <input value={fld.optionsText ?? (fld.options || []).join(', ')} onChange={e => setPf(f => ({ ...f, fields: f.fields.map((x, j) => j === i ? { ...x, optionsText: e.target.value } : x) }))} placeholder="Opsi pisah koma: Media Partner, Sponsor, Vendor" className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
                   )}
                 </div>
               ))}

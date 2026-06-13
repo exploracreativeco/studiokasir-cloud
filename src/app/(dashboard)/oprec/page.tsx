@@ -5,7 +5,7 @@
 // Pipeline: BARU → REVIEW → INTERVIEW → DITERIMA/DITOLAK
 // ============================================================
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Megaphone, Plus, Trash2, Copy, Check, Loader2, X, UserPlus, Upload, Search, Pencil } from 'lucide-react'
+import { Megaphone, Plus, Trash2, Copy, Check, Loader2, X, UserPlus, Upload, Search, Pencil , ChevronUp, ChevronDown } from 'lucide-react'
 
 interface Field { key: string; label: string; type: string; required: boolean; options?: string[] }
 interface Rule { fieldKey: string; operator: string; value: string }
@@ -197,7 +197,15 @@ function LowonganManager({ lowongan, reload, copied, setCopied, linkOf }: { lowo
     setForm({ judul: l.judul, posisi: l.posisi, deskripsi: l.deskripsi || '', fotoUrl: l.fotoUrl || '', fields: l.fields, rules: l.rules || [] })
     setShowForm(true); setErr('')
   }
-  function setF(i: number, patch: Partial<Field>) { setForm(f => ({ ...f, fields: f.fields.map((x, j) => (j === i ? { ...x, ...patch } : x)) })) }
+  function setF(i: number, patch: Partial<Field>) { setForm(f => ({ ...f, fields: f.fields.map((x, j) => (j === i ? { ...x, ...patch }
+  function moveField(i: number, dir: -1 | 1) {
+    setForm(f => {
+      const arr = [...f.fields]; const j = i + dir
+      if (j < 0 || j >= arr.length) return f
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+      return { ...f, fields: arr }
+    })
+  } : x)) })) }
   function setR(i: number, patch: Partial<Rule>) { setForm(f => ({ ...f, rules: f.rules.map((x, j) => (j === i ? { ...x, ...patch } : x)) })) }
 
   async function upload(file: File) {
@@ -213,7 +221,11 @@ function LowonganManager({ lowongan, reload, copied, setCopied, linkOf }: { lowo
   async function save() {
     setErr('')
     if (!form.judul.trim() || !form.posisi.trim()) { setErr('Judul & posisi wajib'); return }
-    const clean = form.fields.filter(f => f.label.trim()).map((f, i) => ({ ...f, key: f.label.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 30) || `f${i}` }))
+    const clean = form.fields.filter(f => f.label.trim()).map((f, i) => {
+      const { optionsText, ...rest } = f as any
+      const opts = optionsText !== undefined ? optionsText.split(',').map((s:string) => s.trim()).filter(Boolean) : (rest.options || [])
+      return { ...rest, key: f.label.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 30) || `f${i}`, options: opts }
+    })
     const body = { judul: form.judul.trim(), posisi: form.posisi.trim(), deskripsi: form.deskripsi.trim() || null, fotoUrl: form.fotoUrl || null, fields: clean, rules: form.rules.filter(r => r.fieldKey && r.value) }
     const res = await fetch(editId ? `/api/oprec/lowongan/${editId}` : '/api/oprec/lowongan', {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' },
@@ -278,9 +290,11 @@ function LowonganManager({ lowongan, reload, copied, setCopied, linkOf }: { lowo
                   {['teks', 'paragraf', 'angka', 'link', 'pilihan', 'checklist'].map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
                 {(f.type === 'pilihan' || f.type === 'checklist') && (
-                  <input value={(f.options || []).join(', ')} onChange={e => setF(i, { options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} placeholder="opsi1, opsi2" className="flex-1 min-w-[120px] border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
+                  <input value={f.optionsText ?? (f.options || []).join(', ')} onChange={e => setF(i, { optionsText: e.target.value })} placeholder="opsi1, opsi2, opsi dengan spasi" className="flex-1 min-w-[120px] border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
                 )}
                 <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={f.required} onChange={e => setF(i, { required: e.target.checked })} className="w-3.5 h-3.5 accent-blue-600" /> wajib</label>
+                <button onClick={() => moveField(i, -1)} disabled={i === 0} className="text-gray-400 disabled:opacity-20 hover:text-gray-700 px-0.5"><ChevronUp className="w-3.5 h-3.5" /></button>
+                <button onClick={() => moveField(i, 1)} disabled={i === form.fields.length - 1} className="text-gray-400 disabled:opacity-20 hover:text-gray-700 px-0.5"><ChevronDown className="w-3.5 h-3.5" /></button>
                 <button onClick={() => setForm(fm => ({ ...fm, fields: fm.fields.filter((_, j) => j !== i) }))} className="text-red-400"><Trash2 className="w-4 h-4" /></button>
               </div>
             ))}
