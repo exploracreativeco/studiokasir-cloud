@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { useSession } from 'next-auth/react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, AreaChart, Area, ComposedChart, Legend } from 'recharts'
 import { formatRupiah } from '@/lib/utils'
 import { LoadingSpinner } from '@/components/shared'
@@ -86,6 +87,8 @@ function StatRow({ label, max, min, avg, maxMonth, minMonth }: any) {
 }
 
 export default function LaporanPage() {
+  const { data: session } = useSession()
+  const isSuperAdmin = (session?.user as any)?.role === 'SUPERADMIN'
   const [activeTab, setActiveTab] = useState('summary')
   const [loading, setLoading] = useState(true)
 
@@ -364,11 +367,13 @@ export default function LaporanPage() {
                 className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400 bg-white">
                 {[2023,2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
               </select>
+              {isSuperAdmin && (
               <button onClick={exportLaporan} disabled={exporting}
                 className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors">
                 <Download className="w-3.5 h-3.5" />
                 {exporting ? 'Mengexport...' : `Export Excel ${year}`}
               </button>
+              )}
             </div>
             <div className="grid grid-cols-4 gap-3">
               {[

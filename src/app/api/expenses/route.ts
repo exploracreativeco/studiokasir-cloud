@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getMonthSheetName } from '@/lib/utils'
+import { logActivity } from '@/lib/activity-log'
 
 const schema = z.object({
   title: z.string().min(1),
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
   const expense = await prisma.expense.create({
     data: { ...parsed.data, date: new Date(parsed.data.date) },
   })
+  await logActivity({ userId: (session.user as any).id, userName: (session.user as any).name, action: 'CREATE', entity: 'Expense', entityId: expense.id, detail: `Pengeluaran: ${expense.title} (Rp ${expense.amount.toLocaleString('id-ID')})` })
 
   // Auto sync to sheets
   const settings = await prisma.setting.findFirst()

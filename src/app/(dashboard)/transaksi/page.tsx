@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Search, RefreshCw, FileText, Mail, Pencil, Trash2, Download, Upload, X, AlertCircle } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 import { formatRupiah, formatDateShort } from '@/lib/utils'
 import { PageHeader, PaymentStatusBadge, SyncBadge, LoadingSpinner } from '@/components/shared'
 import { InvoiceModal } from '@/components/pos/invoice-modal'
@@ -32,6 +33,8 @@ export default function TransaksiPage() {
   const [emailModal, setEmailModal] = useState<{ tx: any; email: string } | null>(null)
   const [sendingEmail, setSendingEmail] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const { data: session } = useSession()
+  const isSuperAdmin = (session?.user as any)?.role === 'SUPERADMIN'
   const [importModal, setImportModal] = useState(false)
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
@@ -249,6 +252,7 @@ export default function TransaksiPage() {
             <option value="desc">Terbaru</option>
             <option value="asc">Terlama</option>
           </select>
+          {isSuperAdmin && (<>
           <button onClick={exportData} disabled={exporting}
             className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
             <Download className="w-3.5 h-3.5" /> {exporting ? 'Export...' : 'Export'}
@@ -257,6 +261,7 @@ export default function TransaksiPage() {
             className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
             <Upload className="w-3.5 h-3.5" /> Import
           </button>
+          </>)}
         </div>
         {!isOfflineMode && <button onClick={retryAllQueue} disabled={retrying} className="flex items-center gap-1.5 text-xs border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg px-3 py-2 transition-colors disabled:opacity-50">
           <RefreshCw className={`w-3.5 h-3.5 ${retrying ? 'animate-spin' : ''}`} /> Retry Queue

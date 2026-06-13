@@ -5,6 +5,7 @@
 import { prisma } from '@/lib/prisma'
 import { hitungTransaksi } from '@/lib/money'
 import { buildDateFilter } from '@/lib/dates'
+import { logActivity } from '@/lib/activity-log'
 
 // ---------- TYPES ----------
 export interface CreateTransactionInput {
@@ -135,6 +136,13 @@ export async function createTransaction(input: CreateTransactionInput) {
   if (input.bookingId) {
     await updateLinkedBookingStatus(input.bookingId, tx.grandTotal)
   }
+
+  // 6. Activity log (jejak uang masuk)
+  await logActivity({
+    userId: input.userId, action: 'CREATE', entity: 'Transaction', entityId: tx.id,
+    branchId: input.branchId || null,
+    detail: `Transaksi ${tx.invoiceNumber} — Rp ${tx.grandTotal.toLocaleString('id-ID')}`,
+  })
 
   return tx
 }

@@ -384,7 +384,8 @@ export default function SettingsPage() {
         {activeTab === 'backup' && (
           <div className="max-w-lg space-y-4">
 
-            {/* Export Excel Manual */}
+            {/* Export Excel Manual — superadmin only */}
+            {isSuperAdmin && (
             <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
               <div>
                 <h3 className="text-sm font-bold text-gray-800 mb-1">Export Excel</h3>
@@ -417,6 +418,7 @@ export default function SettingsPage() {
                 {saving ? 'Mengexport...' : exportMode === 'bulan' ? `Export ${['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][parseInt(exportBulan)-1]} ${exportTahun}` : 'Export Semua Data'}
               </button>
             </div>
+            )}
 
             {/* Backup Database + Jadwal */}
             <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
