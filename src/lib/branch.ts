@@ -1,10 +1,10 @@
 // ============================================================
 // lib/branch.ts — Deteksi mode & branch dari hostname/subdomain
 //
-// exploracreative.co (domain utama) → mode LANDING (publik)
-// yours.exploracreative.co          → mode kasir, branch "yours"
-// explora.exploracreative.co        → mode kasir, branch "explora"
-// app.exploracreative.co            → mode manajemen (lintas branch)
+// exploracreative.id (domain utama) → mode LANDING (publik)
+// yours.exploracreative.id          → mode kasir, branch "yours"
+// explora.exploracreative.id        → mode kasir, branch "explora"
+// app.exploracreative.id            → mode manajemen (lintas branch)
 // localhost / *.railway.app         → dari env DEFAULT_MODE/DEFAULT_BRANCH
 // ============================================================
 
@@ -34,7 +34,7 @@ export function resolveBranchContext(hostname: string): BranchContext {
   if (sub === 'app') return { mode: 'manajemen', branchSlug: null }
   if (KASIR_SUBDOMAINS.includes(sub)) return { mode: 'kasir', branchSlug: sub }
 
-  // Domain utama (exploracreative.co / www) → landing page publik
+  // Domain utama (exploracreative.id / www) → landing page publik
   return { mode: 'landing', branchSlug: null }
 }
 

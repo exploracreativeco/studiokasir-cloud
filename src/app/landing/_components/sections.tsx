@@ -74,7 +74,7 @@ export function LandingView({ content }: { content: LandingContent }) {
           <Camera className="w-5 h-5" strokeWidth={2.2} />
           <span className="lp-display font-bold text-[17px] tracking-tight">EXPLORA CREATIVE</span>
         </div>
-        <a href="https://app.exploracreative.co/login" className="lp-mono hover:text-[var(--lp-ink)] transition-colors">
+        <a href="https://app.exploracreative.id/login" className="lp-mono hover:text-[var(--lp-ink)] transition-colors">
           Login Karyawan
         </a>
       </nav>

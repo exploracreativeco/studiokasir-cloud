@@ -107,7 +107,7 @@ export default function PengaturanLandingPage() {
         <Globe className="w-6 h-6 text-blue-600" />
         <div className="flex-1">
           <h1 className="text-xl font-bold">Pengaturan Landing</h1>
-          <p className="text-sm text-gray-500">Ubah konten exploracreative.co tanpa coding</p>
+          <p className="text-sm text-gray-500">Ubah konten exploracreative.id tanpa coding</p>
         </div>
         <a href="/landing" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 border border-gray-200 bg-white text-gray-600 text-xs font-bold px-3 py-2 rounded-lg hover:bg-gray-50">
           <ExternalLink className="w-3.5 h-3.5" /> Lihat Landing
@@ -255,7 +255,7 @@ export default function PengaturanLandingPage() {
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2"><label className={labelCls}>Alamat</label><input className={inputCls} value={kontak?.konten.alamat || ''} onChange={e => setKonten('kontak', { alamat: e.target.value })} /></div>
             <div><label className={labelCls}>WhatsApp</label><input className={inputCls} value={kontak?.konten.whatsapp || ''} onChange={e => setKonten('kontak', { whatsapp: e.target.value })} placeholder="08xxxxxxxxxx" /></div>
-            <div><label className={labelCls}>Instagram (tanpa @)</label><input className={inputCls} value={kontak?.konten.instagram || ''} onChange={e => setKonten('kontak', { instagram: e.target.value })} placeholder="exploracreative.co" /></div>
+            <div><label className={labelCls}>Instagram (tanpa @)</label><input className={inputCls} value={kontak?.konten.instagram || ''} onChange={e => setKonten('kontak', { instagram: e.target.value })} placeholder="exploracreative" /></div>
           </div>
         </div>
       )}

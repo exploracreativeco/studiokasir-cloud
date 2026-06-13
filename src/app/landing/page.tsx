@@ -61,7 +61,7 @@ const DEFAULTS: LandingContent = {
     judul: 'Kontak',
     alamat: 'Jalan Mulawarman Selatan Raya, Kramas, Tembalang, Semarang',
     whatsapp: '085176869677',
-    instagram: 'exploracreative.co',
+    instagram: 'exploracreative',
   },
 }
 
