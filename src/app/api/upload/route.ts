@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     await prisma.setting.upsert({
       where: { id: 'default' },
       update: { logoUrl },
-      create: { id: 'default', studioName: 'StudioKasir', logoUrl },
+      create: { id: 'default', studioName: 'StudioHub', logoUrl },
     })
 
     return NextResponse.json({ ok: true, logoUrl })

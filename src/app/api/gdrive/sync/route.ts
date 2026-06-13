@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
     ])
 
     const wb = new ExcelJS.Workbook()
-    wb.creator = setting.studioName || 'StudioKasir'
+    wb.creator = setting.studioName || 'StudioHub'
 
     // Sheet Transaksi
     const ws1 = wb.addWorksheet('Transaksi Kasir')
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
 
     const buf = Buffer.from(await wb.xlsx.writeBuffer() as ArrayBuffer)
     const now = new Date()
-    const fileName = `${setting.studioName || 'StudioKasir'}_Backup_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.xlsx`
+    const fileName = `${setting.studioName || 'StudioHub'}_Backup_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.xlsx`
 
     // Upload ke GDrive
     const fileId = await uploadToGDrive(

@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
     prisma.setting.findFirst(),
   ])
 
-  const studioName = settings?.studioName || 'StudioKasir'
+  const studioName = settings?.studioName || 'StudioHub'
 
   // Hitung data per bulan
   const monthlyData = MONTH_NAMES.map((name, mi) => {

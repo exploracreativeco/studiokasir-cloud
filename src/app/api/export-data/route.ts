@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
     prisma.expense.findMany({ orderBy: { date: 'asc' } }),
   ])
 
-  const studioName = settings?.studioName || 'StudioKasir'
+  const studioName = settings?.studioName || 'StudioHub'
   const wb = new ExcelJS.Workbook()
   wb.creator = studioName
 
