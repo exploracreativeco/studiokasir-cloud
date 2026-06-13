@@ -32,23 +32,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // Google sign-in: pastikan user ada di DB (buat sebagai PENDING kalau baru).
     async signIn({ user, account }) {
       if (account?.provider === 'google' && user.email) {
-        let dbUser = await prisma.user.findUnique({ where: { email: user.email } })
-        if (!dbUser) {
-          dbUser = await prisma.user.create({
-            data: {
-              name: user.name || user.email,
-              email: user.email,
-              password: '',
-              role: 'CASHIER',
-              isActive: false,
-              googleId: (user as any).id || null,
-            },
-          })
-        } else if (!dbUser.googleId && (user as any).id) {
-          // Tautkan googleId kalau user sudah ada (login manual sebelumnya)
-          await prisma.user.update({ where: { id: dbUser.id }, data: { googleId: (user as any).id } }).catch(() => {})
+        try {
+          let dbUser = await prisma.user.findUnique({ where: { email: user.email } })
+          if (!dbUser) {
+            // User baru → buat sebagai PENDING (isActive: false).
+            // googleId TIDAK diisi di sini untuk hindari bentrok unique;
+            // ditautkan saat approve / login berikutnya bila perlu.
+            await prisma.user.create({
+              data: {
+                name: user.name || user.email,
+                email: user.email,
+                password: '',
+                role: 'CASHIER',
+                isActive: false,
+              },
+            })
+          }
+          // user nonaktif tetap lolos signIn → middleware arahkan ke /waiting
+          return true
+        } catch (e) {
+          console.error('[signIn google] gagal:', e)
+          return false
         }
-        // user nonaktif tetap boleh "masuk" alur → diarahkan ke /waiting oleh middleware
       }
       return true
     },
