@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
-import { Camera, LayoutDashboard, ShoppingCart, Receipt, DollarSign, BarChart2, Table2, Settings, Settings2, LogOut, Bell, ChevronDown, Menu, Users, ClipboardList, ChevronLeft, ChevronRight, BookOpen, Info, Briefcase, FileOutput, Shield, UsersRound, User, CalendarDays, ClipboardCheck, PartyPopper, Link2, Megaphone, Globe, Home } from 'lucide-react'
+import { Camera, LayoutDashboard, ShoppingCart, Receipt, DollarSign, BarChart2, Table2, Settings, Settings2, LogOut, Bell, ChevronDown, Menu, Users, ClipboardList, ChevronLeft, ChevronRight, BookOpen, Info, Briefcase, FileOutput, Shield, UsersRound, User, CalendarDays, ClipboardCheck, PartyPopper, Link2, Megaphone, Globe, Home, Handshake, ScrollText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const ALL_NAV_ITEMS = [
@@ -22,6 +22,7 @@ const ALL_NAV_ITEMS = [
   { href: '/jadwal', label: 'Jadwal Shift', icon: CalendarDays, menu: 'jadwal', group: 'Tim' },
   { href: '/absensi', label: 'Absensi', icon: ClipboardCheck, menu: 'absensi', group: 'Tim' },
   { href: '/oprec', label: 'Open Recruitment', icon: Megaphone, menu: 'oprec', group: 'Tim' },
+  { href: '/kerjasama', label: 'Kerjasama', icon: Handshake, menu: 'kerjasama', group: 'Tim' },
   // KEUANGAN
   { href: '/laporan', label: 'Laporan', icon: BarChart2, menu: 'laporan', group: 'Keuangan' },
   { href: '/manajemen', label: 'Gaji & Investor', icon: Briefcase, menu: 'manajemen', group: 'Keuangan', feature: process.env.NEXT_PUBLIC_FEATURE_MANAJEMEN },
@@ -34,6 +35,7 @@ const ALL_NAV_ITEMS = [
   { href: '/pengaturan-landing', label: 'Landing Page', icon: Globe, menu: 'landingsettings', group: 'Sistem' },
   { href: '/roles', label: 'Role & Akses', icon: Shield, menu: 'roles', group: 'Sistem' },
   { href: '/settings', label: 'Pengaturan', icon: Settings, menu: 'settings', group: 'Sistem' },
+  { href: '/log', label: 'Activity Log', icon: ScrollText, menu: 'log', group: 'Sistem' },
 ]
 
 const GROUP_ORDER = ['Operasional', 'Tim', 'Keuangan', 'Sistem']
