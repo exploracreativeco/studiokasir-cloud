@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       tanggal: { gte: range.gte, lt: range.lt },
       ...(branchId ? { branchId } : {}),
     },
-    include: { user: { select: { id: true, name: true, role: true, warna: true } } },
+    include: { user: { select: { id: true, name: true, nickname: true, role: true, warna: true } } },
     orderBy: [{ tanggal: 'asc' }, { jamMulai: 'asc' }],
   })
   return NextResponse.json(shifts)
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
         },
       },
     },
-    include: { user: { select: { id: true, name: true, role: true, warna: true } } },
+    include: { user: { select: { id: true, name: true, nickname: true, role: true, warna: true } } },
   })
   return NextResponse.json(shift, { status: 201 })
 }

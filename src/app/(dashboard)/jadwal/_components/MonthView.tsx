@@ -2,7 +2,7 @@
 
 // View BULANAN — overview kalender (pelengkap view per jam)
 import { Loader2 } from 'lucide-react'
-import { Shift, HARI, chipStyle } from './shared'
+import { Shift, HARI, colorOf, labelJadwal } from './shared'
 
 export function MonthView({
   tahun, bulan, shifts, loading, todayDate, onAddAt, onEditShift,
@@ -38,13 +38,12 @@ export function MonthView({
               <>
                 <div className={`text-xs font-bold mb-1 ${i % 7 === 0 ? 'text-red-500' : 'text-gray-500'} ${d === todayDate ? 'text-blue-600' : ''}`}>{d}</div>
                 <div className="space-y-1">
-                  {(byDate.get(d) || []).map(s => { const c = chipStyle(s.userId, s.user.warna); return (
+                  {(byDate.get(d) || []).map(s => (
                     <button key={s.id} onClick={e => onEditShift(s, e)}
-                      className={`block w-full text-left text-[10px] leading-tight font-semibold px-1.5 py-1 rounded hover:opacity-75 ${c.className}`}
-                      style={c.style}>
-                      {s.user.name.split(' ')[0]} <span className="font-normal opacity-70">{s.jamMulai}-{s.jamSelesai}</span>
+                      className={`block w-full text-left text-[10px] leading-tight font-semibold px-1.5 py-1 rounded ${colorOf(s.userId)} hover:opacity-75`}>
+                      {labelJadwal(s.user)} <span className="font-normal opacity-70">{s.jamMulai}-{s.jamSelesai}</span>
                     </button>
-                  )})}
+                  ))}
                 </div>
               </>
             )}

@@ -6,7 +6,7 @@
 // Klik sel kosong → assign orang di jam itu.
 // Klik chip → edit/tukar/hapus shift tsb.
 // ============================================================
-import { Shift, HARI, chipStyle, inisial, dateKey, coversHour } from './shared'
+import { Shift, HARI, colorOf, inisialUser, dateKey, coversHour } from './shared'
 
 export function WeekHourView({
   weekDates, jamRange, shifts, today, onAddAt, onEditShift,
@@ -26,15 +26,6 @@ export function WeekHourView({
   for (const s of shifts) {
     const k = dateKey(new Date(s.tanggal))
     byDate.set(k, [...(byDate.get(k) || []), s])
-  }
-  // Alignment: slot kolom per user KONSISTEN sepanjang hari
-  // (urut jam mulai, lalu nama) — chip orang yang sama lurus vertikal
-  const slotOrder = new Map<string, string[]>() // dateKey -> [userId berurutan]
-  for (const [k, list] of byDate) {
-    const seen: string[] = []
-    const sorted = [...list].sort((a, b) => a.jamMulai.localeCompare(b.jamMulai) || a.user.name.localeCompare(b.user.name))
-    for (const s of sorted) if (!seen.includes(s.userId)) seen.push(s.userId)
-    slotOrder.set(k, seen)
   }
 
   return (
@@ -64,25 +55,18 @@ export function WeekHourView({
               {weekDates.map((d, i) => {
                 const k = dateKey(d)
                 const isToday = k === today
-                const order = slotOrder.get(k) || []
-                const cellShifts = (byDate.get(k) || [])
-                  .filter(s => coversHour(s, h))
-                  .sort((a, b) => order.indexOf(a.userId) - order.indexOf(b.userId))
-                // Slot kosong di depan supaya kolom orang tetap lurus
-                const slots: (Shift | null)[] = order.map(uid => cellShifts.find(s => s.userId === uid) || null)
-                while (slots.length && slots[slots.length - 1] === null) slots.pop()
+                const cellShifts = (byDate.get(k) || []).filter(s => coversHour(s, h))
                 return (
                   <td key={k} onClick={() => onAddAt(k, h)}
                     className={`border-b border-r border-gray-100 p-0.5 align-top cursor-pointer hover:bg-blue-50/60 ${isToday ? 'bg-blue-50/40' : ''} ${i === 0 ? 'bg-red-50/30' : ''}`}>
-                    <div className="flex gap-0.5 min-h-[24px]">
-                      {slots.map((s, si) => s ? (() => { const c = chipStyle(s.userId, s.user.warna); return (
+                    <div className="flex flex-wrap gap-0.5 min-h-[24px]">
+                      {cellShifts.map(s => (
                         <button key={s.id} onClick={e => onEditShift(s, e)}
                           title={`${s.user.name} ${s.jamMulai}-${s.jamSelesai}${s.tipe ? ' · ' + s.tipe : ''}`}
-                          className={`w-8 text-center px-0 py-0.5 rounded font-bold text-[10px] hover:ring-2 hover:ring-gray-400 ${c.className}`}
-                          style={c.style}>
-                          {inisial(s.user.name)}
+                          className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${colorOf(s.userId)} hover:ring-2 hover:ring-gray-400`}>
+                          {inisialUser(s.user)}
                         </button>
-                      )})() : <span key={'e' + si} className="w-8" />)}
+                      ))}
                     </div>
                   </td>
                 )

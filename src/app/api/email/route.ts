@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       </div>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;" />
       <p style="text-align: center; font-size: 12px; color: #9ca3af; margin: 0;">${settings.invoiceFooter || 'Terima kasih!'}</p>
-      <p style="text-align: center; font-size: 11px; color: #d1d5db; margin: 4px 0 0;">StudioKasir · App By Explora Creative</p>
+      <p style="text-align: center; font-size: 11px; color: #d1d5db; margin: 4px 0 0;">StudioHub · App By Explora Creative</p>
     </div>
   `
 
