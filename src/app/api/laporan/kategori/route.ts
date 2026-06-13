@@ -19,10 +19,7 @@ export async function GET(req: NextRequest) {
 
   const transactions = await prisma.transaction.findMany({
     where: dateFilter,
-    include: {
-      items: { include: { package: true } }
-    },
-    select: { diterimaSaatIni: true, grandTotal: true, transactionDate: true, items: { include: { package: true } } } as any
+    select: { diterimaSaatIni: true, grandTotal: true, transactionDate: true, items: { include: { package: true } } }
   })
 
   // Group by category

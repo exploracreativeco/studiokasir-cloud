@@ -16,7 +16,7 @@ interface UserRow {
   fotograferProfile?: { fotografer: { id: string; name: string } } | null
 }
 
-const emptyForm = { name: '', email: '', password: '', role: 'CASHIER', branchId: '', warna: '#3b82f6' }
+const emptyForm = { name: '', email: '', password: '', role: 'CASHIER', branchId: '', warna: '#3b82f6', isActive: true }
 
 export default function KaryawanPage() {
   const [users, setUsers] = useState<UserRow[]>([])
@@ -45,19 +45,19 @@ export default function KaryawanPage() {
 
   useEffect(() => { load() }, [load])
 
-  const pending = users.filter(u => !u.isActive && u.googleId)
-  const active = users.filter(u => !(!u.isActive && u.googleId))
+  const pending = users.filter(u => !u.isActive)
+  const active = users.filter(u => u.isActive)
 
   function openCreate() { setEditId(null); setForm({ ...emptyForm }); setShowForm(true); setError('') }
   function openEdit(u: UserRow) {
     setEditId(u.id)
-    setForm({ name: u.name, email: u.email, password: '', role: u.role, branchId: u.branchId || '', warna: u.warna || '#3b82f6' })
+    setForm({ name: u.name, email: u.email, password: '', role: u.role, branchId: u.branchId || '', warna: u.warna || '#3b82f6', isActive: u.isActive })
     setShowForm(true); setError('')
   }
 
   async function save() {
     setError('')
-    const body: any = { name: form.name.trim(), email: form.email.trim(), role: form.role, branchId: form.branchId || null, warna: form.warna }
+    const body: any = { name: form.name.trim(), email: form.email.trim(), role: form.role, branchId: form.branchId || null, warna: form.warna, isActive: form.isActive }
     if (form.password) body.password = form.password
     if (!editId && !form.password) { setError('Password wajib untuk user baru'); return }
 
@@ -119,7 +119,7 @@ export default function KaryawanPage() {
       {/* PENDING GOOGLE */}
       {pending.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
-          <p className="text-sm font-bold text-amber-800">⏰ Menunggu Persetujuan (login Google)</p>
+          <p className="text-sm font-bold text-amber-800">⏰ Menunggu Persetujuan / Nonaktif</p>
           {pending.map(u => <PendingRow key={u.id} user={u} roles={roles} branches={branches} onApprove={approve} onReject={() => remove(u)} />)}
         </div>
       )}
@@ -143,6 +143,10 @@ export default function KaryawanPage() {
               <input type="color" value={form.warna} onChange={e => setForm(f => ({ ...f, warna: e.target.value }))} className="w-7 h-7 rounded cursor-pointer border-0 p-0" />
               <span className="text-xs text-gray-500">Warna jadwal</span>
             </div>
+            <label className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 cursor-pointer">
+              <input type="checkbox" checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} className="w-4 h-4 accent-green-600" />
+              <span className="text-xs text-gray-600">{form.isActive ? 'Akun Aktif' : 'Nonaktif'}</span>
+            </label>
           </div>
           <div className="flex gap-2 justify-end">
             <button onClick={() => setShowForm(false)} className="border border-gray-200 rounded-lg px-4 py-2 text-sm">Batal</button>
