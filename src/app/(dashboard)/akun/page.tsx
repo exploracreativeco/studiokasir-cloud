@@ -6,6 +6,7 @@
 // User Google: tombol "Buat Password" (tanpa password lama).
 // ============================================================
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { User, Loader2, Check, KeyRound } from 'lucide-react'
 
 const initials = (nick: string | null, name: string) => {
@@ -14,7 +15,9 @@ const initials = (nick: string | null, name: string) => {
   return (parts.length >= 2 ? parts[0][0] + parts[1][0] : src.slice(0, 2)).toUpperCase()
 }
 
-export default function AkunPage() {
+function AkunInner() {
+  const searchParams = useSearchParams()
+  const setupMode = searchParams.get('setup') === '1'
   const [data, setData] = useState<any>(null)
   const [hasPassword, setHasPassword] = useState(true)
   const [form, setForm] = useState({ name: '', nickname: '', whatsapp: '', warna: '#3b82f6' })
@@ -55,8 +58,12 @@ export default function AkunPage() {
     const j = await res.json()
     setPwSaving(false)
     if (res.ok) {
-      setPwMsg(j.created ? '✓ Password berhasil dibuat — sekarang bisa login via email juga' : '✓ Password berhasil diubah')
+      setPwMsg(j.created ? '✓ Password berhasil dibuat!' : '✓ Password berhasil diubah')
       setPw({ old: '', baru: '', ulang: '' }); setHasPassword(true)
+      if (setupMode) {
+        // refresh sesi agar token.hasPassword ter-update, lalu ke beranda
+        setTimeout(() => { window.location.href = '/beranda' }, 800)
+      }
     } else setPwMsg(j.error || 'Gagal')
   }
 
@@ -74,6 +81,13 @@ export default function AkunPage() {
           <p className="text-sm text-gray-500">Kelola profil & keamanan akun</p>
         </div>
       </div>
+
+      {setupMode && !hasPassword && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+          <p className="text-sm font-bold text-amber-800">⚠️ Wajib Buat Password</p>
+          <p className="text-xs text-amber-700 mt-1">Sebelum melanjutkan, buat password dulu untuk akunmu. Setelah ini kamu bisa login pakai Google maupun email + password.</p>
+        </div>
+      )}
 
       {/* Identitas */}
       <div className="bg-white border border-gray-200 rounded-xl p-5">
@@ -135,7 +149,7 @@ export default function AkunPage() {
       </div>
 
       {/* Password */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5">
+      <div className={`bg-white border rounded-xl p-5 ${setupMode && !hasPassword ? 'border-amber-400 ring-2 ring-amber-200' : 'border-gray-200'}`}>
         <p className="font-bold flex items-center gap-2 mb-1"><KeyRound className="w-4 h-4 text-gray-500" /> {hasPassword ? 'Ubah Password' : 'Buat Password'}</p>
         <p className="text-xs text-gray-400 mb-4">{hasPassword ? 'Masukkan password lama untuk verifikasi.' : 'Akun kamu login via Google. Buat password agar bisa login via email juga.'}</p>
         <div className="space-y-3 max-w-sm">
@@ -153,4 +167,10 @@ export default function AkunPage() {
       </div>
     </div>
   )
+}
+
+
+import { Suspense } from 'react'
+export default function AkunPage() {
+  return <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh] text-gray-400"><Loader2 className="w-6 h-6 animate-spin" /></div>}><AkunInner /></Suspense>
 }

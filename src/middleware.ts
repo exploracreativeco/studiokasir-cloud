@@ -117,6 +117,15 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/akun?setup=1', req.url))
   }
 
+  // WAJIB buat password: user tanpa password (login Google) dipaksa ke /akun
+  // sampai membuat password. /akun & /api/account & /api/auth tetap boleh.
+  if (token.hasPassword === false
+      && !pathname.startsWith('/akun')
+      && !pathname.startsWith('/api/account')
+      && !pathname.startsWith('/api/auth')) {
+    return NextResponse.redirect(new URL('/akun?setup=1', req.url))
+  }
+
   // Step 4: Role/access check
   const userRole = token.role as string
   if (userRole === 'SUPERADMIN') return NextResponse.next(withBranch)
