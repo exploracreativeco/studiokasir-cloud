@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import { Search, RefreshCw, FileText, Mail, Pencil, Trash2, Download, Upload, X, AlertCircle } from 'lucide-react'
@@ -88,7 +88,7 @@ export default function TransaksiPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `StudioKasir_Data.xlsx`
+      a.download = `StudioHub_Data.xlsx`
       a.click()
       URL.revokeObjectURL(url)
       toast({ title: 'Export berhasil!' })
@@ -198,7 +198,7 @@ export default function TransaksiPage() {
   const pages = Math.ceil(total / 20)
 
 
-  // 💬 Kirim invoice via WA: pesan ringkas + link halaman publik (+PDF)
+  // ?? Kirim invoice via WA: pesan ringkas + link halaman publik (+PDF)
   function kirimInvoiceWA(tx: any) {
     const type = tx.type === 'OTS' ? 'O' : tx.type === 'BOOKING' ? 'B' : 'P'
     fetch(`/api/inv-token?type=${type}&id=${tx.id}`)
@@ -331,7 +331,7 @@ export default function TransaksiPage() {
                         </button>
                         <button onClick={() => kirimInvoiceWA(tx)} title="Kirim invoice via WA"
                           className="p-1.5 border border-green-200 bg-green-50 rounded-lg text-green-600 hover:bg-green-100 transition-colors text-xs">
-                          💬
+                          ??
                         </button>
                         {tx.type !== 'OTS' && tx.type !== 'BOOKING' && (
                           <button onClick={() => openEdit(tx)} title="Edit"
@@ -458,7 +458,7 @@ export default function TransaksiPage() {
               {importFile && !importPreview && (
                 <button onClick={handleImportPreview} disabled={importing}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold py-2.5 rounded-xl">
-                  {importing ? 'Membaca file...' : 'ðŸ‘ Preview 5 Data Pertama'}
+                  {importing ? 'Membaca file...' : '👁 Preview 5 Data Pertama'}
                 </button>
               )}
               {importPreview && (
@@ -467,7 +467,7 @@ export default function TransaksiPage() {
                     <div className="text-xs font-semibold text-gray-700 mb-2">Preview ({importPreview.totalRows} baris ditemukan):</div>
                     {importPreview.preview?.map((row: any, i: number) => (
                       <div key={i} className="text-xs text-gray-600 py-1 border-b border-gray-100 last:border-0">
-                        {row.invoice} â€” {row.customer} â€” {row.tanggal}
+                        {row.invoice} — {row.customer} — {row.tanggal}
                       </div>
                     ))}
                   </div>

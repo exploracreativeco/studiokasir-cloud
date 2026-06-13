@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
   const wb = new ExcelJS.Workbook()
   wb.creator = studioName
 
-  // â”€â”€ SHEET 1: TRANSAKSI KASIR â”€â”€
+  // ── SHEET 1: TRANSAKSI KASIR ──
   const ws1 = wb.addWorksheet('Transaksi Kasir', { tabColor: { argb: 'FF' + NAVY } })
   ws1.columns = [
     { header: 'NO INVOICE', key: 'inv', width: 20 },
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
     })
   })
 
-  // â”€â”€ SHEET 2: ORDER OTS â”€â”€
+  // ── SHEET 2: ORDER OTS ──
   const ws2 = wb.addWorksheet('Order OTS', { tabColor: { argb: 'FF7C3AED' } })
   ws2.columns = [
     { header: 'NO ORDER', key: 'no', width: 18 },
@@ -156,7 +156,7 @@ export async function GET(req: NextRequest) {
     ws2.getCell(`H${r.number}`).numFmt = '"Rp "#,##0'
   })
 
-  // â”€â”€ SHEET 3: BOOKING â”€â”€
+  // ── SHEET 3: BOOKING ──
   const ws3 = wb.addWorksheet('Booking', { tabColor: { argb: 'FFD97706' } })
   ws3.columns = [
     { header: 'NO BOOKING', key: 'no', width: 18 },
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest) {
     ws3.getCell(`G${r.number}`).numFmt = '"Rp "#,##0'
   })
 
-  // â”€â”€ SHEET 4: CUSTOMER â”€â”€
+  // ── SHEET 4: CUSTOMER ──
   const ws4 = wb.addWorksheet('Customer', { tabColor: { argb: 'FF0891B2' } })
   ws4.columns = [
     { header: 'NAMA', key: 'nama', width: 24 },
@@ -199,7 +199,7 @@ export async function GET(req: NextRequest) {
     styleRow(r, i % 2 === 0)
   })
 
-  // â”€â”€ SHEET 5: PENGELUARAN â”€â”€
+  // ── SHEET 5: PENGELUARAN ──
   const ws5 = wb.addWorksheet('Pengeluaran', { tabColor: { argb: 'FFE11D48' } })
   ws5.columns = [
     { header: 'TANGGAL', key: 'tgl', width: 14 },
@@ -221,7 +221,7 @@ export async function GET(req: NextRequest) {
     ws5.getCell(`D${r.number}`).numFmt = '"Rp "#,##0'
   })
 
-  // ── HELPER ──
+  // -- HELPER --
   const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
   const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des']
 
@@ -269,7 +269,7 @@ export async function GET(req: NextRequest) {
   const omzetMatrix = getOmzetMatrix()
   const expenseMatrix = getExpenseMatrix()
 
-  // ── SHEET SUMMARY ──
+  // -- SHEET SUMMARY --
   const wsSummary = wb.addWorksheet('Summary', { tabColor: { argb: 'FF059669' } })
 
   // Total keseluruhan
@@ -368,7 +368,7 @@ export async function GET(req: NextRequest) {
     wsSummary.getColumn(i).width = 18
   }
 
-  // ── SHEET TAHUNAN (1 per tahun) ──
+  // -- SHEET TAHUNAN (1 per tahun) --
   const COLORS_YEAR = ['FF0F2D5C','FF7C3AED','FFD97706','FF059669','FFE11D48','FF0891B2']
   for (let yIdx = 0; yIdx < allYears.length; yIdx++) {
     const yr = allYears[yIdx]
@@ -382,7 +382,7 @@ export async function GET(req: NextRequest) {
     wsY.getColumn(7).width = 16
 
     // Judul tahun
-    const yrTitle = wsY.addRow([`DATA TRANSAKSI ${yr} — ${studioName.toUpperCase()}`])
+    const yrTitle = wsY.addRow([`DATA TRANSAKSI ${yr} � ${studioName.toUpperCase()}`])
     yrTitle.getCell(1).font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } }
     yrTitle.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS_YEAR[yIdx % COLORS_YEAR.length] } }
     wsY.mergeCells(`A1:G1`)

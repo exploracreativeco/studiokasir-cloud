@@ -52,7 +52,7 @@ export default function LoginPage() {
           <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-3">
             <Camera className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">StudioKasir</h1>
+          <h1 className="text-2xl font-bold text-gray-900">StudioHub</h1>
           <p className="text-sm text-gray-500 mt-1">Sistem POS Photography Studio</p>
         </div>
 

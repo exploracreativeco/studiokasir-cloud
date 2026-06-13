@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import { RefreshCw, Send, Save, Copy } from 'lucide-react'
@@ -6,7 +6,7 @@ import { PageHeader, StatCard, LoadingSpinner } from '@/components/shared'
 import { useToast } from '@/components/ui/use-toast'
 import { getMonthSheetName } from '@/lib/utils'
 
-const GAS_CODE = `// StudioKasir â€” Google Apps Script Webhook
+const GAS_CODE = `// StudioHub — Google Apps Script Webhook
 // Paste ke Extensions > Apps Script, Deploy as Web App
 
 const SPREADSHEET_ID = 'GANTI_DENGAN_SPREADSHEET_ID_KAMU';
@@ -29,7 +29,7 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
 
     if (data.type === 'ping') {
-      return jsonResponse({ ok: true, message: 'Webhook StudioKasir aktif!' });
+      return jsonResponse({ ok: true, message: 'Webhook StudioHub aktif!' });
     }
 
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -105,7 +105,7 @@ function getOrCreateSheet(ss, name, headers, headerColor) {
     sheet.insertRowBefore(1);
     const titleCell = sheet.getRange(1, 1, 1, headers.length);
     titleCell.merge();
-    titleCell.setValue('ðŸ“Š ' + name + ' â€” StudioKasir');
+    titleCell.setValue('📊 ' + name + ' — StudioHub');
     titleCell.setBackground('#1e293b').setFontColor('#ffffff')
              .setFontSize(12).setFontWeight('bold')
              .setHorizontalAlignment('center');
@@ -154,10 +154,10 @@ function updateSummary(sheet, numCols) {
   const dp = data.filter(row => row[14] === 'DP').length;
 
   summaryCell.setValue(
-    'ðŸ“ˆ Total Omzet: Rp ' + totalOmzet.toLocaleString('id-ID') +
-    '  |  ðŸ’° Profit: Rp ' + totalProfit.toLocaleString('id-ID') +
-    '  |  âœ… Lunas: ' + lunas + '  |  â³ DP: ' + dp +
-    '  |  ðŸ“¦ Total: ' + data.length + ' transaksi'
+    '📈 Total Omzet: Rp ' + totalOmzet.toLocaleString('id-ID') +
+    '  |  💰 Profit: Rp ' + totalProfit.toLocaleString('id-ID') +
+    '  |  ✅ Lunas: ' + lunas + '  |  ⏳ DP: ' + dp +
+    '  |  📦 Total: ' + data.length + ' transaksi'
   );
   summaryCell.setBackground('#f0f9ff').setFontColor('#1e40af')
              .setFontWeight('bold').setHorizontalAlignment('center');
@@ -171,13 +171,13 @@ function updateExpenseSummary(sheet) {
   const total = data.reduce((s, row) => s + (Number(row[3]) || 0), 0);
   const summaryCell = sheet.getRange(2, 1, 1, 5);
   summaryCell.merge();
-  summaryCell.setValue('ðŸ’¸ Total Pengeluaran: Rp ' + total.toLocaleString('id-ID') + '  |  ' + data.length + ' item');
+  summaryCell.setValue('💸 Total Pengeluaran: Rp ' + total.toLocaleString('id-ID') + '  |  ' + data.length + ' item');
   summaryCell.setBackground('#fef2f2').setFontColor('#991b1b').setFontWeight('bold').setHorizontalAlignment('center');
   sheet.setRowHeight(2, 28);
 }
 
 function doGet() {
-  return jsonResponse({ ok: true, status: 'StudioKasir webhook ready ðŸš€' });
+  return jsonResponse({ ok: true, status: 'StudioHub webhook ready 🚀' });
 }
 
 function jsonResponse(obj) {
@@ -226,7 +226,7 @@ export default function SheetsPage() {
     const res = await fetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...settings, webhookUrl, spreadsheetId, studioName: settings?.studioName || 'StudioKasir' }),
+      body: JSON.stringify({ ...settings, webhookUrl, spreadsheetId, studioName: settings?.studioName || 'StudioHub' }),
     })
     if (res.ok) { toast({ title: 'Webhook URL tersimpan!' }); load() }
   }
@@ -268,10 +268,10 @@ export default function SheetsPage() {
   if (isOffline) return (
     <div className="p-6 max-w-xl mx-auto mt-10">
       <div className="bg-amber-50 border border-amber-300 rounded-2xl p-6 text-center shadow-sm">
-        <div className="text-4xl mb-3">⚠️</div>
+        <div className="text-4xl mb-3">??</div>
         <h2 className="text-base font-bold text-amber-800 mb-2">Fitur Tidak Tersedia di Versi Offline</h2>
         <p className="text-sm text-amber-700 leading-relaxed mb-4">
-          Sinkronisasi Google Sheets hanya tersedia untuk <span className="font-semibold">StudioKasir versi Online</span>.
+          Sinkronisasi Google Sheets hanya tersedia untuk <span className="font-semibold">StudioHub versi Online</span>.
           Fitur ini membutuhkan koneksi ke server cloud dan konfigurasi Google Sheets yang aktif.
         </p>
         <div className="bg-white border border-amber-200 rounded-xl px-4 py-3 text-sm text-gray-600">
@@ -299,7 +299,7 @@ export default function SheetsPage() {
 
         {/* Webhook config */}
         <div className="bg-white border border-gray-200 rounded-xl p-5">
-          <h3 className="text-sm font-semibold mb-4">ðŸ”— Konfigurasi Webhook</h3>
+          <h3 className="text-sm font-semibold mb-4">🔗 Konfigurasi Webhook</h3>
           <div className="mb-3">
             <label className="block text-xs font-medium text-gray-500 mb-1.5">Google Apps Script Webhook URL</label>
             <div className="flex gap-2">
@@ -338,14 +338,14 @@ export default function SheetsPage() {
 
         {/* Setup Guide */}
         <div className="bg-white border border-gray-200 rounded-xl p-5">
-          <h3 className="text-sm font-semibold mb-5">ðŸ›  Panduan Setup Google Apps Script</h3>
+          <h3 className="text-sm font-semibold mb-5">🛠 Panduan Setup Google Apps Script</h3>
           <div className="space-y-5">
             {[
-              { n: 1, title: 'Buat Google Spreadsheet baru', desc: 'Buka sheets.google.com â†’ buat spreadsheet baru â†’ catat ID dari URL (bagian panjang antara /d/ dan /edit).' },
-              { n: 2, title: 'Buka Apps Script', desc: 'Di spreadsheet â†’ Extensions â†’ Apps Script â†’ hapus kode default â†’ paste kode di bawah ini:' },
+              { n: 1, title: 'Buat Google Spreadsheet baru', desc: 'Buka sheets.google.com → buat spreadsheet baru → catat ID dari URL (bagian panjang antara /d/ dan /edit).' },
+              { n: 2, title: 'Buka Apps Script', desc: 'Di spreadsheet → Extensions → Apps Script → hapus kode default → paste kode di bawah ini:' },
               { n: 3, title: 'Ganti Spreadsheet ID', desc: 'Di baris pertama kode, ganti GANTI_DENGAN_SPREADSHEET_ID_KAMU dengan ID spreadsheet kamu.' },
-              { n: 4, title: 'Deploy sebagai Web App', desc: 'Klik Deploy â†’ New deployment â†’ pilih Web App â†’ Execute as: Me â†’ Who has access: Anyone â†’ Deploy â†’ copy URL.' },
-              { n: 5, title: 'Paste URL ke StudioKasir', desc: 'Paste URL di field Webhook URL di atas â†’ klik Simpan â†’ klik Test. Kalau muncul "Webhook aktif!" berarti berhasil!' },
+              { n: 4, title: 'Deploy sebagai Web App', desc: 'Klik Deploy → New deployment → pilih Web App → Execute as: Me → Who has access: Anyone → Deploy → copy URL.' },
+              { n: 5, title: 'Paste URL ke StudioHub', desc: 'Paste URL di field Webhook URL di atas → klik Simpan → klik Test. Kalau muncul "Webhook aktif!" berarti berhasil!' },
             ].map(s => (
               <div key={s.n} className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{s.n}</div>

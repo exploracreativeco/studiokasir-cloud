@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -70,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false)
   const [access, setAccess] = useState<Record<string, boolean>>({})
   const [pageLoading, setPageLoading] = useState(true)
-  const [studioName, setStudioName] = useState('StudioKasir')
+  const [studioName, setStudioName] = useState('StudioHub')
   const [appMode, setAppMode] = useState<string>('manajemen')
   const [branchSlug, setBranchSlug] = useState<string | null>(null)
   const [canSwitch, setCanSwitch] = useState(false)

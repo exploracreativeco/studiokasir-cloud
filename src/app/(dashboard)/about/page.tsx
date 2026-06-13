@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { CheckCircle, AlertCircle, Download, RefreshCw, Info } from 'lucide-react'
 
@@ -38,7 +38,7 @@ export default function AboutPage() {
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-xl font-bold text-gray-900">Tentang Aplikasi</h1>
-        <p className="text-sm text-gray-500 mt-1">Informasi versi dan pembaruan StudioKasir</p>
+        <p className="text-sm text-gray-500 mt-1">Informasi versi dan pembaruan StudioHub</p>
       </div>
 
       {/* Versi sekarang */}
@@ -48,7 +48,7 @@ export default function AboutPage() {
             <Info className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <div className="text-sm font-bold text-gray-900">StudioKasir</div>
+            <div className="text-sm font-bold text-gray-900">StudioHub</div>
             <div className="text-xs text-gray-500">Point of Sale & Booking Management</div>
           </div>
         </div>

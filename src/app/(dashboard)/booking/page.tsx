@@ -103,7 +103,7 @@ export default function BookingPage() {
   }
 
   async function deleteBooking(b: Booking) {
-    if (!confirm(`Hapus DP ${b.bookingNumber} â€” ${b.namaCustomer}?\nNominal: ${formatRupiah(b.dpAmount)}\n\nData akan dihapus permanen.`)) return
+    if (!confirm(`Hapus DP ${b.bookingNumber} — ${b.namaCustomer}?\nNominal: ${formatRupiah(b.dpAmount)}\n\nData akan dihapus permanen.`)) return
     await fetch(`/api/booking/${b.id}`, { method: 'DELETE' })
     toast({ title: 'DP dihapus' }); load()
   }
@@ -202,7 +202,7 @@ export default function BookingPage() {
                           {b.tanggalSesi ? <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{formatDateShort(b.tanggalSesi)}</span> : '-'}
                         </td>
                         <td className="px-3 py-3 text-xs text-gray-500">
-                          {b.tanggalFoto ? formatDateShort(b.tanggalFoto) : <span className="text-gray-300">—</span>}
+                          {b.tanggalFoto ? formatDateShort(b.tanggalFoto) : <span className="text-gray-300">�</span>}
                         </td>
                         <td className="px-3 py-3 text-sm font-semibold">
                           {b.dpAmount > 0 ? <span className="text-blue-600">{formatRupiah(b.dpAmount)}</span> : <span className="text-gray-300">-</span>}
@@ -264,7 +264,7 @@ export default function BookingPage() {
           <div className="bg-white rounded-2xl w-full max-w-md flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-base font-bold">{editId ? 'Edit DP' : 'Tambah DP Baru'}</h2>
-              <button onClick={resetForm} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">âœ•</button>
+              <button onClick={resetForm} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">✕</button>
             </div>
             <div className="px-6 py-4 space-y-3 overflow-y-auto">
               {/* Customer Search */}
@@ -331,7 +331,7 @@ export default function BookingPage() {
                     }
                     {form.keperluan && !categories.some(c => c.toLowerCase() === form.keperluan.toLowerCase()) && (
                       <div className="px-3 py-2 text-xs text-gray-400 border-t border-gray-100">
-                        âœï¸ Custom: <span className="font-medium text-gray-600">{form.keperluan}</span>
+                        ✏️ Custom: <span className="font-medium text-gray-600">{form.keperluan}</span>
                       </div>
                     )}
                   </div>
@@ -365,7 +365,7 @@ export default function BookingPage() {
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">Fotografer</label>
                 <select value={form.fotograferId} onChange={e => setForm(f => ({ ...f, fotograferId: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white">
-                  <option value="">â€” Belum Ditentukan â€”</option>
+                  <option value="">— Belum Ditentukan —</option>
                   {fotografers.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                 </select>
               </div>

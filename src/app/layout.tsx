@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma'
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const settings = await prisma.setting.findFirst()
-    const studioName = settings?.studioName || 'StudioKasir'
+    const studioName = settings?.studioName || 'StudioHub'
     return {
       title: studioName,
       description: `Sistem kasir modern — ${studioName}`,
@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
     }
   } catch {
     return {
-      title: 'StudioKasir',
+      title: 'StudioHub',
       description: 'Sistem kasir modern untuk photography studio',
     }
   }

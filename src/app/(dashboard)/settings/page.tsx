@@ -183,7 +183,7 @@ export default function SettingsPage() {
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      a.download = `StudioKasir_Backup_${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.xlsx`
+      a.download = `StudioHub_Backup_${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.xlsx`
       a.click()
       URL.revokeObjectURL(blobUrl)
       toast({ title: 'Export Excel berhasil!' })
@@ -446,7 +446,7 @@ export default function SettingsPage() {
                   <input type="checkbox" checked={form.backupLocalFolder === 'true'}
                     onChange={e => setForm(f => ({ ...f, backupLocalFolder: e.target.checked ? 'true' : 'false' }))}
                     className="w-4 h-4 rounded accent-blue-600" />
-                  <span className="text-sm text-gray-700"> ke folder lokal <span className="text-xs text-gray-400 font-mono">C:\StudioKasir\backups\</span></span>
+                  <span className="text-sm text-gray-700"> ke folder lokal <span className="text-xs text-gray-400 font-mono">C:\StudioHub\backups\</span></span>
                 </label>
               </div>
 

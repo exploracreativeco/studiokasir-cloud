@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -14,12 +14,12 @@ export async function DELETE(req: NextRequest) {
   const tahun = searchParams.get('tahun')
 
   try {
-    // â”€â”€ RESET TRANSAKSI PER BULAN â”€â”€
+    // ── RESET TRANSAKSI PER BULAN ──
     if (section === 'transactions-bulan') {
       if (!bulan || !tahun) {
         return NextResponse.json({ error: 'Bulan dan tahun wajib diisi' }, { status: 400 })
       }
-      // Pakai local timezone (ikut timezone server/Windows) — tidak hardcode UTC
+      // Pakai local timezone (ikut timezone server/Windows) � tidak hardcode UTC
       const fromParts = [Number(tahun), Number(bulan) - 1, 1]
       const from = new Date(fromParts[0], fromParts[1], fromParts[2], 0, 0, 0)
       const to = new Date(fromParts[0], fromParts[1] + 1, fromParts[2], 0, 0, 0)
@@ -75,7 +75,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ ok: true, deleted: ids.length, booking: bkIds.length, ots: otsIds.length })
     }
 
-    // â”€â”€ RESET SECTION LAIN â”€â”€
+    // ── RESET SECTION LAIN ──
     switch (section) {
       case 'transactions':
         await prisma.transactionItemAddon.deleteMany()

@@ -35,7 +35,7 @@ export default function NotFound() {
         <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <Camera className="w-8 h-8 text-white" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">StudioKasir</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">StudioHub</h1>
         <p className="text-sm text-gray-500 mb-6">by Explora Creative</p>
 
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
@@ -52,7 +52,7 @@ export default function NotFound() {
           </div>
           <div className="flex items-start gap-2 text-sm text-gray-600">
             <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
-            <span>Klik kanan <strong>fix_all.bat</strong> di <code className="bg-gray-100 px-1 rounded">C:\StudioKasir</code> lalu Run as Administrator</span>
+            <span>Klik kanan <strong>fix_all.bat</strong> di <code className="bg-gray-100 px-1 rounded">C:\StudioHub</code> lalu Run as Administrator</span>
           </div>
           <div className="flex items-start gap-2 text-sm text-gray-600">
             <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span>

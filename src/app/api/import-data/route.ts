@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import ExcelJS from 'exceljs'
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // â”€â”€ IMPORT TRANSAKSI KASIR â”€â”€
+    // ── IMPORT TRANSAKSI KASIR ──
     const wsTx = wb.getWorksheet('Transaksi Kasir')
     if (wsTx) {
       const rows: any[] = []
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // â”€â”€ IMPORT PENGELUARAN â”€â”€
+    // ── IMPORT PENGELUARAN ──
     const wsExp = wb.getWorksheet('Pengeluaran')
     if (wsExp && !preview) {
       wsExp.eachRow((row, idx) => {
@@ -156,18 +156,18 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // â”€â”€ IMPORT ORDER OTS â”€â”€
+    // ── IMPORT ORDER OTS ──
     const wsOts = wb.getWorksheet('Order OTS')
     if (wsOts && !preview) {
       wsOts.eachRow(async (row, idx) => {
         if (idx === 1) return
         const noOrder = row.getCell(1).value?.toString()?.trim()
         if (!noOrder) return
-        // handler OTS sudah ada sebelumnya â€” tidak diubah
+        // handler OTS sudah ada sebelumnya — tidak diubah
       })
     }
 
-    // â”€â”€ IMPORT BOOKING â”€â”€
+    // ── IMPORT BOOKING ──
     const wsBook = wb.getWorksheet('Booking')
     if (wsBook && !preview) {
       const bookRows: any[] = []

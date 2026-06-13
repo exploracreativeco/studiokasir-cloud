@@ -25,7 +25,7 @@ export function InvoiceModal({ tx, onClose }: InvoiceModalProps) {
     setBarcodeUrl(`https://barcodeapi.org/api/128/${encodeURIComponent(tx.invoiceNumber)}`)
   }, [])
 
-  const studioName = settings?.studioName || 'StudioKasir'
+  const studioName = settings?.studioName || 'StudioHub'
   const studioAddress = settings?.address || ''
   const studioWa = settings?.whatsapp || ''
   const studioIg = settings?.instagram || ''

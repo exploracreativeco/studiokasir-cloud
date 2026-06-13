@@ -18,7 +18,7 @@ export function TagihanModal({ tx, onClose }: TagihanModalProps) {
     fetch('/api/settings').then(r => r.json()).then(setSettings)
   }, [])
 
-  const studioName = settings?.studioName || 'StudioKasir'
+  const studioName = settings?.studioName || 'StudioHub'
   const studioAddress = settings?.address || ''
   const studioWa = settings?.whatsapp || ''
   const studioIg = settings?.instagram || ''

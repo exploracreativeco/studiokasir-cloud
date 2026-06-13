@@ -70,7 +70,7 @@ export default function WaitingPage() {
         </button>
 
         <p className="text-xs text-gray-300 mt-4">
-          {setting?.studioName || 'StudioKasir'} — Sistem Manajemen Studio
+          {setting?.studioName || 'StudioHub'} — Sistem Manajemen Studio
         </p>
       </div>
     </div>

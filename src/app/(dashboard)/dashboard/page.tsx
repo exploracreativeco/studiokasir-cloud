@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend, LabelList } from 'recharts'
@@ -228,7 +228,7 @@ export default function DashboardPage() {
           <div className="col-span-2 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <h3 className="text-sm font-bold text-gray-800">Transaksi Terbaru</h3>
-              <Link href="/transaksi" className="text-xs text-blue-600 hover:text-blue-700 font-medium">Lihat semua â†’</Link>
+              <Link href="/transaksi" className="text-xs text-blue-600 hover:text-blue-700 font-medium">Lihat semua →</Link>
             </div>
             <div className="divide-y divide-gray-50">
               {stats?.recentTransactions?.slice(0, 5).map((tx: any) => (

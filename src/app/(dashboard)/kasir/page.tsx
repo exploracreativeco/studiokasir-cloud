@@ -156,7 +156,7 @@ export default function KasirPage() {
   function applyPromoToItem(pkgId: string, promo: PromoCode) {
     setSelectedPackages(prev => prev.map(p => {
       if (p.package.id !== pkgId) return p
-      // Hitung total harga item: harga/org Ã— jumlah orang Ã— quantity
+      // Hitung total harga item: harga/org × jumlah orang × quantity
       const totalHarga = p.jumlahOrang > 0
         ? p.package.price * p.jumlahOrang * (p.quantity || 1)
         : p.price
@@ -544,7 +544,7 @@ export default function KasirPage() {
                         <div className="flex items-center gap-3 mt-0.5">
                           <span className="text-xs text-gray-500">{b.keperluan}</span>
                           {b.dpAmount > 0 && <span className="text-xs text-emerald-600 font-semibold">DP: {formatRupiah(b.dpAmount)}</span>}
-                          {b.tanggalFoto && <span className="text-xs text-gray-400">📅 {new Date(b.tanggalFoto).toLocaleDateString('id-ID')}</span>}
+                          {b.tanggalFoto && <span className="text-xs text-gray-400">?? {new Date(b.tanggalFoto).toLocaleDateString('id-ID')}</span>}
                         </div>
                       </button>
                     ))}
@@ -558,8 +558,8 @@ export default function KasirPage() {
 
             {activeBookingId && (
               <div className="mt-2 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                <span className="text-xs text-blue-700 font-medium">📋 Booking aktif: {activeBookingData?.bookingNumber} — DP {formatRupiah(dpAmount)} otomatis diisi</span>
-                <button onClick={() => { setActiveBookingId(null); setActiveBookingData(null); setDpAmount(0); setTanggalFoto('') }} className="ml-auto text-xs text-blue-500 hover:text-blue-700">✕ Hapus</button>
+                <span className="text-xs text-blue-700 font-medium">?? Booking aktif: {activeBookingData?.bookingNumber} � DP {formatRupiah(dpAmount)} otomatis diisi</span>
+                <button onClick={() => { setActiveBookingId(null); setActiveBookingData(null); setDpAmount(0); setTanggalFoto('') }} className="ml-auto text-xs text-blue-500 hover:text-blue-700">? Hapus</button>
               </div>
             )}
             <div className="mt-2 flex justify-end">
@@ -663,14 +663,14 @@ export default function KasirPage() {
                             className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 flex-shrink-0"><Plus className="w-3 h-3" /></button>
                         </>
                       ) : (
-                        <span className="text-sm text-gray-300">â€”</span>
+                        <span className="text-sm text-gray-300">—</span>
                       )}
                     </div>
                     <div className="h-full w-px bg-blue-100 mx-2" />
                     {/* Item / Quantity */}
                     <div className="flex items-center justify-center gap-1.5">
                       {sp.package.category === 'CUSTOM' ? (
-                        <span className="text-sm text-gray-300">â€”</span>
+                        <span className="text-sm text-gray-300">—</span>
                       ) : (
                         <>
                           <button onClick={() => { if(sp.quantity <= 1) removePackage(idx); else updateQuantity(sp.package.id, sp.quantity - 1, idx) }}
@@ -767,7 +767,7 @@ export default function KasirPage() {
                                   <span className="text-gray-400 ml-1">
                                     {promo.discountType === 'PERCENTAGE' ? `${promo.discountValue}%` : formatRupiah(promo.discountValue)}
                                   </span>
-                                  {sp.promoCodeId === promo.id && <span className="ml-1 text-yellow-500">âœ“</span>}
+                                  {sp.promoCodeId === promo.id && <span className="ml-1 text-yellow-500">✓</span>}
                                 </button>
                               ))}
                             </div>
@@ -817,7 +817,7 @@ export default function KasirPage() {
               {addons.length > 6 && (
                 <button type="button" onClick={() => setShowAllAddons(v => !v)}
                   className="mt-2 w-full text-xs font-semibold text-blue-600 hover:text-blue-700 py-1.5 border border-blue-100 hover:border-blue-300 rounded-lg bg-blue-50 hover:bg-blue-100 transition-all">
-                  {showAllAddons ? 'â†‘ Sembunyikan' : `+ Selengkapnya (${addons.length - 6} lainnya)`}
+                  {showAllAddons ? '↑ Sembunyikan' : `+ Selengkapnya (${addons.length - 6} lainnya)`}
                 </button>
               )}
             </div>
@@ -913,7 +913,7 @@ export default function KasirPage() {
                           <div className="text-xs text-orange-400">Custom Item</div>
                         ) : (
                           <>
-                            {sp.jumlahOrang > 0 && <div className="text-xs text-blue-500">{sp.jumlahOrang} org Ã— {sp.quantity} item Ã— {formatRupiah(sp.customPrice != null ? sp.price / sp.jumlahOrang / sp.quantity : sp.package.price)}</div>}
+                            {sp.jumlahOrang > 0 && <div className="text-xs text-blue-500">{sp.jumlahOrang} org × {sp.quantity} item × {formatRupiah(sp.customPrice != null ? sp.price / sp.jumlahOrang / sp.quantity : sp.package.price)}</div>}
                             {sp.jumlahOrang === 0 && sp.quantity > 1 && <div className="text-xs text-blue-500">{sp.quantity}x {formatRupiah(sp.customPrice != null ? sp.price / sp.quantity : sp.package.price)}</div>}
                           </>
                         )}
