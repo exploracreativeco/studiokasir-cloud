@@ -73,6 +73,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as any).role ?? dbUser?.role ?? 'CASHIER'
         token.id = (user as any).id ?? dbUser?.id
         token.isActive = ((user as any).isActive ?? dbUser?.isActive) !== false
+        // Deteksi punya password (untuk paksa buat password user Google).
+        // Credentials login pasti punya password; Google ambil dari dbUser.
+        if ((user as any).role !== undefined) {
+          token.hasPassword = true // login via credentials = pasti punya password
+        } else {
+          token.hasPassword = !!(dbUser?.password && dbUser.password.length > 0)
+        }
 
         // Ambil akses dari database saat login
         const role = token.role as string
@@ -95,6 +102,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role as string
         session.user.access = token.access as Record<string, boolean>
         session.user.isActive = token.isActive as boolean
+        ;(session.user as any).hasPassword = token.hasPassword as boolean
       }
       return session
     },
