@@ -26,6 +26,7 @@ const MENU_PATHS: Record<string, string> = {
   '/absensi': 'absensi',
   '/event': 'event',
   '/oprec': 'oprec',
+  '/log': 'log',
 }
 
 // Feature flags — dikontrol via .env saat build

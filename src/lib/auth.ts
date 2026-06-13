@@ -2,6 +2,7 @@
 import Credentials from 'next-auth/providers/credentials'
 import Google from 'next-auth/providers/google'
 import { rateLimit } from '@/lib/rate-limit'
+import { logActivity } from '@/lib/activity-log'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
@@ -119,6 +120,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user || !user.isActive) return null
         const valid = await bcrypt.compare(parsed.data.password, user.password)
         if (!valid) return null
+        await logActivity({ userId: user.id, userName: user.name, action: 'LOGIN', entity: 'Auth', detail: 'Login via email' })
         return { id: user.id, email: user.email, name: user.name, role: user.role }
       },
     }),

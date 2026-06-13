@@ -886,3 +886,17 @@ model JadwalTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String?
+  action    String
+  entity    String
+  entityId  String?
+  detail    String?
+  branchId  String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+}
