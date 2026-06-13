@@ -69,11 +69,10 @@ export default function SettingsPage() {
   })
 
   const TABS = [
-    { id: 'studio', label: 'Studio' },
+    { id: 'studio', label: 'Profil & Invoice' },
     { id: 'email', label: 'Email' },
     { id: 'backup', label: 'Backup' },
     ...(isSuperAdmin ? [
-      { id: 'users', label: '👥 Users' },
       { id: 'cabang', label: '🏢 Studio & Cabang' },
       { id: 'developer', label: 'Developer' },
     ] : []),
@@ -494,63 +493,6 @@ export default function SettingsPage() {
         )}
 
         {/* USERS */}
-        {activeTab === 'users' && isSuperAdmin && (
-          <div className="space-y-3">
-            <div className="flex justify-end">
-              <button onClick={() => { setShowUserForm(true); setEditUserId(null); setUserForm({ name: '', email: '', password: '', role: 'CASHIER' }) }}
-                className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-blue-700"><Plus className="w-3.5 h-3.5" /> Tambah User</button>
-            </div>
-            {showUserForm && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3 max-w-lg">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-xs font-medium text-gray-500 mb-1">Nama*</label>
-                    <input value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))} placeholder="Nama lengkap"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
-                  <div><label className="block text-xs font-medium text-gray-500 mb-1">Email*</label>
-                    <input value={userForm.email} onChange={e => setUserForm(f => ({ ...f, email: e.target.value }))} placeholder="email@gmail.com"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
-                  <div><label className="block text-xs font-medium text-gray-500 mb-1">Password{editUserId ? ' (kosongkan jika tidak diubah)' : '*'}</label>
-                    <input type="password" value={userForm.password} onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))} placeholder="Password"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" /></div>
-                  <div><label className="block text-xs font-medium text-gray-500 mb-1">Role</label>
-                    <select value={userForm.role} onChange={e => setUserForm(f => ({ ...f, role: e.target.value }))}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white">
-                      <option value="CASHIER">Kasir</option>
-                      <option value="ADMIN">Admin</option>
-                      <option value="SUPERADMIN">Super Admin</option>
-                    </select></div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => { setShowUserForm(false); setEditUserId(null) }} className="flex-1 border border-gray-200 bg-white rounded-lg py-2 text-sm">Batal</button>
-                  <button onClick={saveUser} className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-semibold">{editUserId ? 'Update' : 'Tambah'}</button>
-                </div>
-              </div>
-            )}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <table className="w-full">
-                <thead><tr className="bg-gray-50 border-b border-gray-100">
-                  {['Nama','Email','Role','Status','Aksi'].map(h => <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>)}
-                </tr></thead>
-                <tbody className="divide-y divide-gray-50">
-                  {users.map((u: any) => (
-                    <tr key={u.id} className="hover:bg-gray-50/50">
-                      <td className="px-4 py-3 text-sm font-medium">{u.name}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500">{u.email}</td>
-                      <td className="px-4 py-3"><Badge variant={u.role === 'SUPERADMIN' ? 'red' : u.role === 'ADMIN' ? 'blue' : 'default'}>{u.role}</Badge></td>
-                      <td className="px-4 py-3"><Badge variant={u.isActive ? 'green' : 'default'}>{u.isActive ? 'Aktif' : 'Nonaktif'}</Badge></td>
-                      <td className="px-4 py-3"><div className="flex gap-1">
-                        <button onClick={() => { setEditUserId(u.id); setUserForm({ name: u.name, email: u.email, password: '', role: u.role }); setShowUserForm(true) }}
-                          className="text-xs px-2 py-1 border border-gray-200 rounded-lg text-gray-400 hover:text-blue-600">Edit</button>
-                        <button onClick={() => deleteUser(u.id)}
-                          className="text-xs px-2 py-1 border border-red-100 bg-red-50 rounded-lg text-red-400 hover:bg-red-100">Hapus</button>
-                      </div></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
         {/* HAK AKSES */}
         {activeTab === 'cabang' && isSuperAdmin && <BranchManager />}

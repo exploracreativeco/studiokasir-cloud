@@ -28,6 +28,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
   callbacks: {
+    // Selalu kembali ke domain sendiri (cegah redirect ke URL lama)
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith('/')) return `${baseUrl}${url}`
+      try { if (new URL(url).origin === baseUrl) return url } catch {}
+      return baseUrl
+    },
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as any).role
@@ -36,12 +42,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Ambil akses dari database saat login
         const role = (user as any).role
-
-        // Landing setelah login — dari tabel Role (dinamis)
-        try {
-          const roleRow = await prisma.role.findUnique({ where: { slug: role } })
-          token.defaultLanding = roleRow?.defaultLanding || '/kasir'
-        } catch { token.defaultLanding = '/kasir' }
         if (role !== 'SUPERADMIN') {
           const accessRows = await prisma.roleAccess.findMany({ where: { role } })
           if (accessRows.length > 0) {
@@ -61,7 +61,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role as string
         session.user.access = token.access as Record<string, boolean>
         session.user.isActive = token.isActive as boolean
-        ;(session.user as any).defaultLanding = token.defaultLanding as string
       }
       return session
     },
