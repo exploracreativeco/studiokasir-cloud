@@ -1,183 +1,86 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logActivity } from '@/lib/activity-log'
 
-export async function GET(req: NextRequest) {
+const INCLUDE = {
+  customer: true,
+  user: { select: { id: true, name: true, email: true } },
+  fotografer: true,
+  metodePembayaran: true,
+  promoCode: true,
+  items: { include: { package: true, addons: { include: { addon: true } } } },
+  biayaOps: true,
+} as const
+
+// ---------- GET satu transaksi ----------
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { id } = await params
 
-  const { searchParams } = new URL(req.url)
-  const page = parseInt(searchParams.get('page') || '1')
-  const limit = parseInt(searchParams.get('limit') || '20')
-  const search = searchParams.get('search') || ''
-  const status = searchParams.get('status') || ''
-  const fromDate = searchParams.get('from') || ''
-  const toDate = searchParams.get('to') || ''
-  const yearFilter = searchParams.get('year') || ''
-  const monthFilter = searchParams.get('month') || ''
-  const sortOrder = searchParams.get('sort') || 'desc'
+  const tx = await prisma.transaction.findUnique({ where: { id }, include: INCLUDE })
+  if (!tx) return NextResponse.json({ error: 'Transaksi tidak ditemukan' }, { status: 404 })
+  return NextResponse.json(tx)
+}
 
-  // Build date filter (pakai local timezone)
-  const dateFilter: any = {}
-  if (fromDate) dateFilter.gte = new Date(fromDate + 'T00:00:00')
-  if (toDate) dateFilter.lte = new Date(toDate + 'T23:59:59')
-  if (yearFilter && monthFilter) {
-    const lastDay = new Date(Number(yearFilter), Number(monthFilter), 0).getDate()
-    dateFilter.gte = new Date(Number(yearFilter), Number(monthFilter) - 1, 1, 0, 0, 0)
-    dateFilter.lte = new Date(Number(yearFilter), Number(monthFilter) - 1, lastDay, 23, 59, 59)
-  } else if (yearFilter) {
-    dateFilter.gte = new Date(Number(yearFilter), 0, 1, 0, 0, 0)
-    dateFilter.lte = new Date(Number(yearFilter), 11, 31, 23, 59, 59)
-  }
-  const hasDateFilter = Object.keys(dateFilter).length > 0
+// ---------- PATCH (edit field sederhana) ----------
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { id } = await params
 
-  // Build where for transactions
-  const txWhere: any = {}
-  if (search) {
-    txWhere.OR = [
-      { invoiceNumber: { contains: search, mode: 'insensitive' } },
-      { customer: { name: { contains: search, mode: 'insensitive' } } },
-    ]
-  }
-  if (status === 'DP' || status === 'LUNAS') txWhere.paymentStatus = status
-  if (hasDateFilter) txWhere.transactionDate = dateFilter
+  const existing = await prisma.transaction.findUnique({ where: { id }, select: { id: true, invoiceNumber: true } })
+  if (!existing) return NextResponse.json({ error: 'Transaksi tidak ditemukan' }, { status: 404 })
 
-  // Build where for OTS orders
-  const otsWhere: any = {}
-  if (search) {
-    otsWhere.OR = [
-      { orderNumber: { contains: search, mode: 'insensitive' } },
-      { namaCustomer: { contains: search, mode: 'insensitive' } },
-    ]
+  const body = await req.json().catch(() => ({}))
+  // Hanya izinkan field aman untuk di-patch (hindari kirim sembarang kolom ke prisma)
+  const data: any = {}
+  if (typeof body.notes === 'string') data.notes = body.notes
+  if (typeof body.paymentStatus === 'string') data.paymentStatus = body.paymentStatus
+  if (typeof body.fotograferId !== 'undefined') data.fotograferId = body.fotograferId || null
+  if (typeof body.metodePembayaranId !== 'undefined') data.metodePembayaranId = body.metodePembayaranId || null
+  if (typeof body.tanggalFoto !== 'undefined') data.tanggalFoto = body.tanggalFoto ? new Date(body.tanggalFoto) : null
+  if (typeof body.transactionDate !== 'undefined' && body.transactionDate) data.transactionDate = new Date(body.transactionDate)
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: 'Tidak ada field yang bisa diubah' }, { status: 400 })
   }
 
-  if (hasDateFilter) otsWhere.orderDate = dateFilter
+  const updated = await prisma.transaction.update({ where: { id }, data, include: INCLUDE })
 
-  // Build where for bookings
-  const bookingWhere: any = { dpAmount: { gt: 0 }, status: { not: undefined } }
-  if (search) {
-    bookingWhere.OR = [
-      { bookingNumber: { contains: search, mode: 'insensitive' } },
-      { namaCustomer: { contains: search, mode: 'insensitive' } },
-    ]
-  }
-  if (hasDateFilter) bookingWhere.createdAt = dateFilter
-
-  const typeFilter = searchParams.get('type') || ''
-
-  const [transactions, otsOrders, bookings] = await Promise.all([
-    typeFilter && typeFilter !== 'PAKET' ? Promise.resolve([]) :
-    prisma.transaction.findMany({
-      where: txWhere,
-      include: {
-        customer: true,
-        user: { select: { id: true, name: true, email: true } },
-        fotografer: true,
-        metodePembayaran: true,
-        promoCode: true,
-        items: { include: { package: true, addons: { include: { addon: true } } } },
-        biayaOps: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    typeFilter && typeFilter !== 'OTS' ? Promise.resolve([]) :
-    (status === 'DP' || status === 'LUNAS' ? Promise.resolve([]) :
-    prisma.otsOrder.findMany({
-      where: otsWhere,
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        metodePembayaran: true,
-        status: true,
-        items: true,
-        customer: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    })),
-    typeFilter && typeFilter !== 'BOOKING' ? Promise.resolve([]) :
-    prisma.booking.findMany({
-      where: bookingWhere,
-      include: {
-        customer: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-  ])
-
-  // Normalize OTS orders to transaction-like objects
-  const normalizedOts = otsOrders.map((o: any) => ({
-    id: o.id,
-    invoiceNumber: o.orderNumber,
-    type: 'OTS',
-    jenis: o.jenis,
-    customerId: o.customerId,
-    customer: o.customer || { id: '', name: o.namaCustomer, whatsapp: o.whatsapp },
-    namaCustomer: o.namaCustomer,
-    user: o.user,
-    fotografer: null,
-    metodePembayaran: o.metodePembayaran,
-    subtotal: o.total,
-    discount: 0,
-    grandTotal: o.total,
-    dpAmount: o.total,
-    remainingPayment: 0,
-    paymentStatus: 'LUNAS' as const,
-    syncStatus: o.syncStatus,
-    syncSheet: o.syncSheet,
-    transactionDate: o.orderDate,
-    createdAt: o.createdAt,
-    notes: o.notes,
-    items: o.items.map((item: any) => ({
-      id: item.id,
-      package: { name: item.deskripsi },
-      price: item.harga * item.jumlah,
-      jumlahOrang: item.jumlah > 1 ? item.jumlah : null,
-      addons: [],
-      ukuran: item.ukuran,
-    })),
-    otsStatus: o.status,
-  }))
-
-  // Normalize bookings
-  const normalizedBookings = (bookings as any[]).map((b: any) => {
-    const isRefund = b.status === 'REFUND'
-    const nominal = isRefund ? -b.dpAmount : b.dpAmount
-    return {
-      id: b.id,
-      invoiceNumber: b.bookingNumber,
-      type: 'BOOKING',
-      customer: b.customer || { id: '', name: b.namaCustomer, whatsapp: b.whatsapp },
-      namaCustomer: b.namaCustomer,
-      user: null,
-      fotografer: null,
-      metodePembayaran: null,
-      subtotal: nominal,
-      discount: 0,
-      grandTotal: nominal,
-      dpAmount: nominal,
-      remainingPayment: 0,
-      paymentStatus: 'DP' as const,
-      syncStatus: b.syncStatus || 'PENDING',
-      syncSheet: b.syncSheet || null,
-      transactionDate: b.tanggalSesi || b.createdAt,
-      createdAt: b.createdAt,
-      notes: b.catatan,
-      keperluan: b.keperluan,
-      bookingStatus: b.status,
-      items: [{ id: b.id, package: { name: b.keperluan || 'DP' }, price: nominal, addons: [] }],
-    }
+  await logActivity({
+    userId: (session.user as any)?.id || '',
+    action: 'UPDATE', entity: 'Transaction', entityId: id,
+    detail: `Edit transaksi ${existing.invoiceNumber}`,
   })
 
-  // Normalize transactions
-  const normalizedTx = (transactions as any[]).map((t: any) => ({ ...t, type: 'PAKET' }))
+  return NextResponse.json(updated)
+}
 
-  // Combine and sort by date
-  const combined = [...normalizedTx, ...normalizedOts, ...normalizedBookings]
-    .sort((a, b) => sortOrder === 'asc'
-      ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+// ---------- DELETE (hapus transaksi + relasi via cascade) ----------
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { id } = await params
 
-  const total = combined.length
-  const paginated = combined.slice((page - 1) * limit, page * limit)
+  // Ambil dulu untuk detail log + cek booking terkait
+  const tx = await prisma.transaction.findUnique({
+    where: { id },
+    select: { id: true, invoiceNumber: true, grandTotal: true, bookingId: true, branchId: true },
+  })
+  if (!tx) return NextResponse.json({ error: 'Transaksi tidak ditemukan' }, { status: 404 })
 
-  return NextResponse.json({ transactions: paginated, total, page, limit, pages: Math.ceil(total / limit) })
+  // Hapus — items/addons/biayaOps ikut terhapus otomatis (onDelete: Cascade di schema)
+  await prisma.transaction.delete({ where: { id } })
+
+  // Jejak hapus uang
+  await logActivity({
+    userId: (session.user as any)?.id || '',
+    action: 'DELETE', entity: 'Transaction', entityId: id,
+    branchId: tx.branchId || null,
+    detail: `Hapus transaksi ${tx.invoiceNumber} — Rp ${(tx.grandTotal || 0).toLocaleString('id-ID')}`,
+  })
+
+  return NextResponse.json({ ok: true, deleted: id })
 }
