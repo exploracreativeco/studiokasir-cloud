@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { hitungTransaksi } from '@/lib/money'
 import { buildDateFilter } from '@/lib/dates'
 import { logActivity } from '@/lib/activity-log'
+import { syncOneTransaction } from '@/lib/sheet-sync'
 
 // ---------- TYPES ----------
 export interface CreateTransactionInput {
@@ -145,71 +146,11 @@ export async function createTransaction(input: CreateTransactionInput) {
     detail: `Transaksi ${tx.invoiceNumber} — Rp ${tx.grandTotal.toLocaleString('id-ID')}`,
   })
 
-  // 7. Sync ke Google Sheets (Apps Script webhook) — ditunggu (ada timeout 8s + try-catch).
-  //    Gagal sync TIDAK menggagalkan transaksi (sudah aman di dalam fungsi).
-  await syncTransactionToSheet(tx)
+  // 7. Sync ke Google Sheets (Apps Script webhook) — pakai lib bersama (retry internal).
+  //    Gagal sync TIDAK menggagalkan transaksi (fungsi tak pernah throw).
+  await syncOneTransaction(tx)
 
   return tx
-}
-
-/**
- * Kirim transaksi ke Google Sheets via Apps Script webhook (format sesuai doPost di /sheets).
- * Dibungkus aman: error apa pun tidak menggagalkan penyimpanan transaksi.
- * Update syncStatus: SYNCED kalau berhasil, FAILED kalau gagal.
- */
-async function syncTransactionToSheet(tx: any) {
-  try {
-    const setting = await prisma.setting.findFirst({ select: { webhookUrl: true } })
-    const webhookUrl = setting?.webhookUrl?.trim()
-    if (!webhookUrl) return // belum diset → biarkan PENDING
-
-    const d = new Date(tx.transactionDate)
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    const paketNama = (tx.items || []).map((i: any) => i.package?.name || i.customItemName).filter(Boolean).join(', ')
-    const jumlahOrang = (tx.items || []).reduce((s: number, i: any) => s + (i.jumlahOrang || 0), 0) || null
-
-    // Payload PERSIS sesuai Apps Script doPost (TX_HEADERS)
-    const payload = {
-      type: 'transaction',
-      date: dateStr,
-      invoiceNumber: tx.invoiceNumber,
-      customer: tx.customer?.name || '-',
-      package: paketNama || '-',
-      fotografer: tx.fotografer?.name || '-',
-      jumlahOrang: jumlahOrang,
-      subtotal: tx.subtotal || 0,
-      discount: tx.discount || 0,
-      dp: tx.dpAmount || 0,
-      sisa: tx.remainingPayment || 0,
-      total: tx.diterimaSaatIni || tx.grandTotal || 0,
-      biayaOps: tx.biayaOpsTotal || 0,
-      method: tx.metodePembayaran?.nama || '-',
-      status: tx.paymentStatus || 'LUNAS',
-      cashier: tx.user?.name || '-',
-      notes: tx.notes || '',
-    }
-
-    // Timeout 8 detik biar tak menggantung
-    const ctrl = new AbortController()
-    const timer = setTimeout(() => ctrl.abort(), 8000)
-    const res = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: ctrl.signal,
-    }).finally(() => clearTimeout(timer))
-
-    const ok = res.ok
-    await prisma.transaction.update({
-      where: { id: tx.id },
-      data: { syncStatus: ok ? 'SYNCED' : 'FAILED', syncedAt: ok ? new Date() : null },
-    })
-  } catch {
-    // Gagal sync → tandai FAILED (bisa retry dari /sheets), TAPI transaksi tetap aman
-    try {
-      await prisma.transaction.update({ where: { id: tx.id }, data: { syncStatus: 'FAILED' } })
-    } catch {}
-  }
 }
 
 /** Update status booking → LUNAS jika total bayar sudah mencukupi */

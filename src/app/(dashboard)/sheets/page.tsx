@@ -208,16 +208,38 @@ export default function SheetsPage() {
       setWebhookUrl(s?.webhookUrl || '')
       setSpreadsheetId(s?.spreadsheetId || '')
     }
+    let belumSync = 0
     if (txRes.ok) {
       const data = await txRes.json()
       const txs = data.transactions || []
+      belumSync = txs.filter((t: any) => ['QUEUED', 'PENDING', 'FAILED'].includes(t.syncStatus)).length
       setSyncStats({
         synced: txs.filter((t: any) => t.syncStatus === 'SYNCED').length,
-        queued: txs.filter((t: any) => ['QUEUED', 'PENDING', 'FAILED'].includes(t.syncStatus)).length,
+        queued: belumSync,
         failed: txs.filter((t: any) => t.syncStatus === 'FAILED').length,
       })
     }
     setLoading(false)
+    // Auto-retry: kalau ada yang belum tersync & webhook sudah diatur, coba sync ulang diam-diam sekali.
+    if (belumSync > 0) {
+      try {
+        const r = await fetch('/api/sync/retry', { method: 'POST' })
+        const j = await r.json().catch(() => null)
+        if (j?.ok && j.synced > 0) {
+          // refresh statistik tanpa memicu auto-retry lagi
+          const tx2 = await fetch('/api/transactions?limit=100')
+          if (tx2.ok) {
+            const d2 = await tx2.json()
+            const t2 = d2.transactions || []
+            setSyncStats({
+              synced: t2.filter((t: any) => t.syncStatus === 'SYNCED').length,
+              queued: t2.filter((t: any) => ['QUEUED', 'PENDING', 'FAILED'].includes(t.syncStatus)).length,
+              failed: t2.filter((t: any) => t.syncStatus === 'FAILED').length,
+            })
+          }
+        }
+      } catch {}
+    }
   }
 
   useEffect(() => { load() }, [])
