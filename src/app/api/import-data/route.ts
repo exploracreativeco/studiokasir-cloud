@@ -2,7 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import ExcelJS from 'exceljs'
-import { generateInvoiceNumber } from '@/lib/utils'
+
+
+// Generate INV-YYMMDD-NNNN berbasis tanggal transaksi (anti-duplikat: ambil sequence tertinggi hari itu)
+async function genInvoice(date: Date): Promise<string> {
+  const yy = String(date.getFullYear()).slice(2)
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  const prefix = `INV-${yy}${mm}${dd}-`
+  const last = await prisma.transaction.findFirst({
+    where: { invoiceNumber: { startsWith: prefix } },
+    orderBy: { invoiceNumber: 'desc' },
+    select: { invoiceNumber: true },
+  })
+  const seq = last ? (parseInt(last.invoiceNumber.replace(prefix, '')) || 0) : 0
+  return `${prefix}${String(seq + 1).padStart(4, '0')}`
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -13,6 +28,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData()
     const file = formData.get('file') as File
     const preview = formData.get('preview') === 'true'
+    const branchId = (formData.get('branchId') as string)?.trim() || null  // import ke cabang tertentu
 
     if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 })
 
@@ -34,7 +50,7 @@ export async function POST(req: NextRequest) {
       })
       for (const row of custRows) {
         try {
-          const existing = await prisma.customer.findFirst({ where: { name: { equals: row.nama } } })
+          const existing = await prisma.customer.findFirst({ where: { name: { equals: row.nama, mode: 'insensitive' } } })
           if (existing) { results.skipped++; continue }
           await prisma.customer.create({ data: { name: row.nama, whatsapp: row.wa || null, email: row.email || null } })
           results.imported++
@@ -49,9 +65,12 @@ export async function POST(req: NextRequest) {
       wsTx.eachRow((row, idx) => {
         if (idx === 1) return // skip header
         const inv = row.getCell(1).value?.toString()?.trim()
-        if (!inv) return
+        // Baris tetap diproses walau tak ada invoice — nanti di-generate.
+        // Tapi kalau SEMUA kolom kosong, lewati (baris kosong).
+        const custCheck = row.getCell(3).value?.toString()?.trim()
+        if (!inv && !custCheck) return
         rows.push({
-          invoice: inv,
+          invoice: inv || '',
           tanggal: row.getCell(2).value?.toString()?.trim(),
           customer: row.getCell(3).value?.toString()?.trim(),
           wa: row.getCell(4).value?.toString()?.trim(),
@@ -75,12 +94,14 @@ export async function POST(req: NextRequest) {
 
       for (const row of rows) {
         try {
-          // Cek duplikat invoice
-          const existing = await prisma.transaction.findFirst({ where: { invoiceNumber: row.invoice } })
-          if (existing) { results.skipped++; continue }
+          // Cek duplikat invoice (hanya kalau invoice diisi di file)
+          if (row.invoice) {
+            const existing = await prisma.transaction.findFirst({ where: { invoiceNumber: row.invoice } })
+            if (existing) { results.skipped++; continue }
+          }
 
           // Cari atau buat customer
-          let customer = await prisma.customer.findFirst({ where: { name: { equals: row.customer } } })
+          let customer = await prisma.customer.findFirst({ where: { name: { equals: row.customer, mode: 'insensitive' } } })
           if (!customer && row.customer) {
             customer = await prisma.customer.create({ data: { name: row.customer, whatsapp: row.wa || null } })
           }
@@ -92,6 +113,9 @@ export async function POST(req: NextRequest) {
             const parts = row.tanggal.split('/')
             if (parts.length === 3) txDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]))
           }
+
+          // Generate invoice kalau kosong (berbasis tanggal transaksi)
+          const invoiceNumber = row.invoice || await genInvoice(txDate)
 
           // Cari metode pembayaran
           let metode = null
@@ -105,12 +129,12 @@ export async function POST(req: NextRequest) {
             fotografer = await prisma.fotografer.findFirst({ where: { name: { equals: row.fotografer } } })
           }
 
-          const txCount = await prisma.transaction.count()
           await prisma.transaction.create({
             data: {
-              invoiceNumber: row.invoice,
+              invoiceNumber: invoiceNumber,
               customerId: customer.id,
               userId: session.user.id,
+              branchId: branchId,
               metodePembayaranId: metode?.id || null,
               fotograferId: fotografer?.id || null,
               subtotal: row.subtotal || 0,
@@ -127,8 +151,8 @@ export async function POST(req: NextRequest) {
           results.imported++
         } catch (e: any) {
           const errMsg = e.message?.substring(0, 200) || 'Unknown error'
-          results.errors.push(`${row.invoice}: ${errMsg}`)
-          results.failedRows.push({ type: 'transaksi', invoice: row.invoice, customer: row.customer, total: row.total, error: errMsg })
+          results.errors.push(`${row.invoice || row.customer || 'baris'}: ${errMsg}`)
+          results.failedRows.push({ type: 'transaksi', invoice: row.invoice || '(auto)', customer: row.customer, total: row.total, error: errMsg })
         }
       }
     }
@@ -136,6 +160,8 @@ export async function POST(req: NextRequest) {
     // ── IMPORT PENGELUARAN ──
     const wsExp = wb.getWorksheet('Pengeluaran')
     if (wsExp && !preview) {
+      // Kumpulkan baris dulu (eachRow tidak menunggu async) lalu simpan dengan await
+      const expRows: any[] = []
       wsExp.eachRow((row, idx) => {
         if (idx === 1) return
         const judul = row.getCell(2).value?.toString()?.trim()
@@ -146,26 +172,23 @@ export async function POST(req: NextRequest) {
           const parts = tgl.split('/')
           if (parts.length === 3) expDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]))
         }
-        prisma.expense.create({
-          data: {
-            title: judul,
-            amount: Number(row.getCell(4).value) || 0,
-            category: (row.getCell(3).value?.toString() || 'LAINNYA') as any,
-            date: expDate,
-          }
-        }).catch(() => {})
+        expRows.push({
+          title: judul,
+          amount: Number(row.getCell(4).value) || 0,
+          category: row.getCell(3).value?.toString() || 'LAINNYA',
+          date: expDate,
+        })
       })
-    }
-
-    // ── IMPORT ORDER OTS ──
-    const wsOts = wb.getWorksheet('Order OTS')
-    if (wsOts && !preview) {
-      wsOts.eachRow(async (row, idx) => {
-        if (idx === 1) return
-        const noOrder = row.getCell(1).value?.toString()?.trim()
-        if (!noOrder) return
-        // handler OTS sudah ada sebelumnya — tidak diubah
-      })
+      for (const e of expRows) {
+        try {
+          await prisma.expense.create({
+            data: { title: e.title, amount: e.amount, category: e.category as any, date: e.date, branchId: branchId },
+          })
+          results.imported++
+        } catch (err: any) {
+          results.errors.push(`Pengeluaran ${e.title}: ${err.message?.substring(0, 100)}`)
+        }
+      }
     }
 
     // ── IMPORT BOOKING ──
@@ -209,7 +232,7 @@ export async function POST(req: NextRequest) {
 
           // Cari atau buat customer
           let customer = await prisma.customer.findFirst({
-            where: { name: { equals: row.customer } },
+            where: { name: { equals: row.customer, mode: 'insensitive' } },
           })
           if (!customer && row.customer) {
             customer = await prisma.customer.create({
@@ -231,6 +254,7 @@ export async function POST(req: NextRequest) {
               namaCustomer: row.customer || '',
               whatsapp: row.wa || null,
               userId: session.user.id,
+              branchId: branchId,
               keperluan: row.keperluan || '',
               dpAmount: row.dp,
               status: row.status as any,

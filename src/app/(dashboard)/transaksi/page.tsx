@@ -39,6 +39,8 @@ export default function TransaksiPage() {
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
   const [importPreview, setImportPreview] = useState<any>(null)
+  const [importBranchId, setImportBranchId] = useState('')
+  const [branches, setBranches] = useState<any[]>([])
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [yearFilter, setYearFilter] = useState('')
@@ -106,6 +108,7 @@ export default function TransaksiPage() {
     const fd = new FormData()
     fd.append('file', importFile)
     fd.append('preview', 'true')
+    if (importBranchId) fd.append('branchId', importBranchId)
     const res = await fetch('/api/import-data', { method: 'POST', body: fd })
     const data = await res.json()
     setImportPreview(data)
@@ -118,6 +121,7 @@ export default function TransaksiPage() {
     const fd = new FormData()
     fd.append('file', importFile)
     fd.append('preview', 'false')
+    if (importBranchId) fd.append('branchId', importBranchId)
     const res = await fetch('/api/import-data', { method: 'POST', body: fd })
     const data = await res.json()
     if (data.ok) {
@@ -257,7 +261,7 @@ export default function TransaksiPage() {
             className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
             <Download className="w-3.5 h-3.5" /> {exporting ? 'Export...' : 'Export'}
           </button>
-          <button onClick={() => setImportModal(true)}
+          <button onClick={() => { setImportModal(true); if (branches.length === 0) fetch('/api/branches/manage').then(r => r.ok ? r.json() : []).then(d => setBranches(Array.isArray(d) ? d : [])).catch(() => {}) }}
             className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
             <Upload className="w-3.5 h-3.5" /> Import
           </button>
@@ -447,12 +451,23 @@ export default function TransaksiPage() {
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h3 className="text-sm font-bold">Import Data dari Excel</h3>
-              <button onClick={() => { setImportModal(false); setImportFile(null); setImportPreview(null) }}
+              <button onClick={() => { setImportModal(false); setImportFile(null); setImportPreview(null); setImportBranchId('') }}
                 className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-5 space-y-4">
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700">
-                <strong>Format file:</strong> Gunakan file hasil Export Data dari aplikasi ini. Sheet yang diimport: Transaksi Kasir & Pengeluaran.
+                <strong>Format file:</strong> Sheet "Transaksi Kasir" (& opsional "Pengeluaran", "Booking"). Kolom NO INVOICE boleh kosong — sistem akan generate otomatis berdasarkan tanggal.
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-2">Import ke cabang</label>
+                <select value={importBranchId} onChange={e => setImportBranchId(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                  <option value="">— Tanpa cabang —</option>
+                  {branches.map((b: any) => (
+                    <option key={b.id} value={b.id}>{b.nama}</option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-gray-400 mt-1">Semua data di file ini akan masuk ke cabang yang dipilih.</p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-2">Pilih file Excel (.xlsx)</label>
