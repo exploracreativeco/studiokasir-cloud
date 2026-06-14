@@ -67,12 +67,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         // Google user dari profile() tak punya role → ambil dari DB by email.
+        // PENTING: untuk Google, user.id = profile.sub (id Google), BUKAN id User di DB.
+        // Maka kalau ini user Google (role undefined), WAJIB ambil id dari DB by email.
+        const isGoogle = (user as any).role === undefined
         let dbUser: any = null
-        if ((user as any).role === undefined && user.email) {
+        if (isGoogle && user.email) {
           dbUser = await prisma.user.findUnique({ where: { email: user.email } })
         }
         token.role = (user as any).role ?? dbUser?.role ?? 'CASHIER'
-        token.id = (user as any).id ?? dbUser?.id
+        // id: credentials pakai user.id (sudah = id DB); Google WAJIB pakai dbUser.id
+        token.id = isGoogle ? (dbUser?.id ?? token.id) : (user as any).id
         token.isActive = ((user as any).isActive ?? dbUser?.isActive) !== false
         // Deteksi punya password (untuk paksa buat password user Google).
         // Credentials login pasti punya password; Google ambil dari dbUser.
