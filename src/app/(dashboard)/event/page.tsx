@@ -50,6 +50,28 @@ export default function EventPage() {
   const [error, setError] = useState('')
   const [modal, setModal] = useState<{ tanggal: string; event?: EventRow } | null>(null)
   const [form, setForm] = useState({ ...emptyForm })
+  const isSuper = myRole === 'SUPERADMIN'
+  const [banModal, setBanModal] = useState(false)
+  const [bans, setBans] = useState<any[]>([])
+  const [banForm, setBanForm] = useState({ userId: '', bannedFrom: '', bannedUntil: '', reason: '' })
+  const [banErr, setBanErr] = useState('')
+
+  async function loadBans() {
+    try { const r = await fetch('/api/event/ban'); if (r.ok) setBans(await r.json()) } catch {}
+  }
+  function openBanModal() { setBanModal(true); setBanErr(''); setBanForm({ userId: '', bannedFrom: '', bannedUntil: '', reason: '' }); loadBans() }
+  async function simpanBan() {
+    setBanErr('')
+    if (!banForm.userId || !banForm.bannedFrom || !banForm.bannedUntil) { setBanErr('User, tanggal mulai & selesai wajib diisi'); return }
+    const r = await fetch('/api/event/ban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(banForm) })
+    const j = await r.json().catch(() => null)
+    if (r.ok) { setBanForm({ userId: '', bannedFrom: '', bannedUntil: '', reason: '' }); loadBans() }
+    else setBanErr(j?.error || 'Gagal menyimpan larangan')
+  }
+  async function cabutBan(id: string) {
+    const r = await fetch(`/api/event/ban?id=${id}`, { method: 'DELETE' })
+    if (r.ok) loadBans()
+  }
 
   useEffect(() => {
     fetch('/api/jadwal/users').then(r => r.json()).then(u => Array.isArray(u) && setUsers(u)).catch(() => {})
@@ -135,6 +157,11 @@ export default function EventPage() {
           <p className="text-xs text-gray-500">{events.filter(e => e.status !== 'BATAL').length} event · kontrak {fmtRp(totalKontrakBulan)}</p>
         </div>
         <div className="flex-1" />
+        {isSuper && (
+          <button onClick={openBanModal} className="text-xs font-semibold px-3 py-2 rounded-lg border border-red-200 text-red-600 bg-red-50 hover:bg-red-100">
+            Larangan Crew
+          </button>
+        )}
         <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-1 py-1">
           <button onClick={() => nav(-1)} className="p-1.5 rounded-md hover:bg-gray-100"><ChevronLeft className="w-4 h-4" /></button>
           <span className="text-sm font-semibold w-36 text-center">{BULAN[bulan - 1]} {tahun}</span>
@@ -276,6 +303,77 @@ export default function EventPage() {
           </div>
         </div>
       )}
+
+      {/* Modal Kelola Larangan Crew Event Booth (superadmin) */}
+      {banModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setBanModal(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white">
+              <h2 className="font-bold text-sm">Larangan Crew Event Booth</h2>
+              <button onClick={() => setBanModal(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+            </div>
+            <div className="p-5 space-y-4">
+              {banErr && <div className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2">{banErr}</div>}
+
+              {/* Form tambah larangan */}
+              <div className="space-y-2">
+                <select value={banForm.userId} onChange={e => setBanForm({ ...banForm, userId: e.target.value })}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                  <option value="">— Pilih crew —</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Mulai</label>
+                    <input type="date" value={banForm.bannedFrom} onChange={e => setBanForm({ ...banForm, bannedFrom: e.target.value })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Selesai</label>
+                    <input type="date" value={banForm.bannedUntil} onChange={e => setBanForm({ ...banForm, bannedUntil: e.target.value })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                </div>
+                <input value={banForm.reason} onChange={e => setBanForm({ ...banForm, reason: e.target.value })}
+                  placeholder="Alasan (opsional)" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                <button onClick={simpanBan} className="w-full bg-red-600 text-white text-sm font-semibold rounded-lg py-2 hover:bg-red-700">
+                  Tambah Larangan
+                </button>
+                <p className="text-[11px] text-gray-400">Crew yang dilarang tak bisa mendaftar event yang tanggalnya jatuh dalam periode larangan.</p>
+              </div>
+
+              {/* Daftar larangan aktif */}
+              <div className="border-t border-gray-100 pt-3">
+                <p className="text-xs font-bold text-gray-500 mb-2">Daftar Larangan</p>
+                {bans.length === 0 ? (
+                  <p className="text-xs text-gray-400">Belum ada larangan.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {bans.map(b => {
+                      const aktif = new Date() >= new Date(b.bannedFrom) && new Date() <= new Date(b.bannedUntil)
+                      return (
+                        <div key={b.id} className="flex items-center gap-2 border border-gray-100 rounded-lg px-3 py-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate">{b.user?.name || '—'}
+                              {aktif && <span className="ml-2 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">AKTIF</span>}
+                            </p>
+                            <p className="text-[11px] text-gray-500">
+                              {new Date(b.bannedFrom).toLocaleDateString('id-ID')} – {new Date(b.bannedUntil).toLocaleDateString('id-ID')}
+                              {b.reason ? ` · ${b.reason}` : ''}
+                            </p>
+                          </div>
+                          <button onClick={() => cabutBan(b.id)} className="text-[11px] text-gray-400 hover:text-red-600 font-semibold shrink-0">Cabut</button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

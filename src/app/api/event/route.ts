@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { monthRange } from '@/lib/dates'
 import { z } from 'zod'
 import { logActivity } from '@/lib/activity-log'
+import { cekBanEventBooth, pesanBan } from '@/lib/event-ban'
 
 const crewSchema = z.object({
   userId: z.string().min(1),
@@ -65,9 +66,18 @@ export async function POST(req: NextRequest) {
   }
   const { crews, tanggal, ...rest } = parsed.data
   const [y, m, d] = tanggal.split('-').map(Number)
+  const tanggalEvent = new Date(y, m - 1, d)
   const role = (session.user as any).role
   const myId = (session.user as any).id
   const isAdmin = role === 'SUPERADMIN' || role === 'ADMIN'
+
+  // Cek larangan (ban) untuk crew biasa yang mendaftarkan diri
+  if (!isAdmin && crews.some(c => c.userId === myId)) {
+    const ban = await cekBanEventBooth(myId, tanggalEvent)
+    if (ban.banned) {
+      return NextResponse.json({ error: pesanBan(ban.until, ban.reason) }, { status: 403 })
+    }
+  }
 
   // Crew biasa: honor dipaksa 0 & hanya boleh memasukkan dirinya sendiri
   const safeCrews = isAdmin
